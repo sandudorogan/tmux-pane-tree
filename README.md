@@ -23,23 +23,40 @@ It is designed for agent-heavy tmux workflows, with hook-driven badges for
 
 ## Install
 
+### TPM
+
+Add the plugin to your tmux config:
+
+```tmux
+set -g @plugin 'tmux-plugins/tpm'
+set -g @plugin 'sandudorogan/tmux-sidebar'
+
+run '~/.tmux/plugins/tpm/tpm'
+```
+
+Reload tmux, then install plugins with `prefix + I`.
+
+TPM will automatically source `sidebar.tmux`.
+
+### Manual
+
 Clone the repo:
 
 ```bash
-git clone https://github.com/sandudorogan/tmux-sidebar ~/.config/tmux/plugins/tmux-sidebar
+git clone https://github.com/sandudorogan/tmux-sidebar ~/.tmux/plugins/tmux-sidebar
 ```
 
 Source the plugin from your tmux config:
 
 ```tmux
-if-shell "test -f ~/.config/tmux/plugins/tmux-sidebar/sidebar.tmux" \
-  "source-file ~/.config/tmux/plugins/tmux-sidebar/sidebar.tmux"
+if-shell "test -f ~/.tmux/plugins/tmux-sidebar/sidebar.tmux" \
+  "source-file ~/.tmux/plugins/tmux-sidebar/sidebar.tmux"
 ```
 
 Reload tmux:
 
 ```bash
-tmux source-file ~/.config/tmux/tmux.conf
+tmux source-file ~/.tmux.conf
 ```
 
 ## Usage
@@ -57,12 +74,14 @@ Each agent should report pane-local status through
 Example:
 
 ```bash
-~/.config/tmux/plugins/tmux-sidebar/scripts/update-pane-state.sh \
+~/.tmux/plugins/tmux-sidebar/scripts/update-pane-state.sh \
   --pane "$TMUX_PANE" \
   --app claude \
   --status needs-input \
   --message "Permission request"
 ```
+
+If you install the plugin somewhere else, adjust the path accordingly.
 
 Example hook wrappers:
 
