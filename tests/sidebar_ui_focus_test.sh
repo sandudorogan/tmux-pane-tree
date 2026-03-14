@@ -4,7 +4,7 @@ set -euo pipefail
 . "$(dirname "$0")/testlib.sh"
 
 fake_tmux_register_pane "%1" "work" "@1" "editor" "nvim"
-fake_tmux_register_pane "%99" "work" "@1" "editor" "tmux-sidebar" "python3"
+fake_tmux_register_pane "%99" "work" "@1" "editor" "Sidebar" "python3"
 printf '%%1\n' > "$TEST_TMUX_DATA_DIR/current_pane.txt"
 
 output="$(TMUX_PANE=%99 python3 - <<'PY'

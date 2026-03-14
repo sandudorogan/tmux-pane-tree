@@ -9,9 +9,9 @@ mkdir -p "$TMUX_SIDEBAR_STATE_DIR"
 fake_tmux_set_tree <<'EOF'
 work|@1|editor|%1|nvim|shell|0
 work|@1|editor|%2|claude|claude|1
-work|@1|editor|%99|python3|tmux-sidebar|0
+work|@1|editor|%99|python3|Sidebar|0
 ops|@3|logs|%9|tail|tail|0
-solo|@5|sidebar-only|%77|python3|tmux-sidebar|0
+solo|@5|sidebar-only|%77|python3|Sidebar|0
 EOF
 
 output="$(python3 scripts/sidebar-ui.py --dump-render 2>&1)"
@@ -25,13 +25,24 @@ fake_tmux_register_main_pane "%9"
 output="$(python3 scripts/sidebar-ui.py --dump-render 2>&1)"
 
 assert_contains "$output" '├─ work'
-assert_contains "$output" '│     └─ %2 claude'
-assert_contains "$output" '▶ │     └─ %9 tail'
+assert_contains "$output" '│     └─ claude'
+assert_contains "$output" '▶ │     └─ tail'
 case "$output" in
-  *'%99 tmux-sidebar'* ) fail "sidebar pane should be hidden when window has other panes" ;;
+  *'%99 Sidebar'* ) fail "sidebar pane should be hidden when window has other panes" ;;
 esac
 assert_contains "$output" '└─ solo'
-assert_contains "$output" '%77 python3'
+assert_contains "$output" 'python3'
+
+fake_tmux_set_tree <<'EOF'
+work|@1|editor|%1|nvim|shell|0
+work|@1|editor|%99|python3|tmux-sidebar|0
+EOF
+
+output="$(python3 scripts/sidebar-ui.py --dump-render 2>&1)"
+
+case "$output" in
+  *'%99 tmux-sidebar'* ) fail "legacy sidebar pane titles should still be hidden when window has other panes" ;;
+esac
 
 fake_tmux_set_tree <<'EOF'
 work|@1|editor|%3|codex-aarch64-apple-darwin|codex-aarch64-apple-darwin|1
@@ -40,7 +51,7 @@ rm -f "$TMUX_SIDEBAR_STATE_DIR"/pane-*.json
 
 output="$(python3 scripts/sidebar-ui.py --dump-render 2>&1)"
 
-assert_contains "$output" '%3 codex'
+assert_contains "$output" 'codex'
 case "$output" in
   *'codex-aarch64-apple-darwin'* ) fail "codex target-triple binary names should normalize to codex" ;;
 esac
@@ -56,8 +67,8 @@ rm -f "$TMUX_SIDEBAR_STATE_DIR/pane-%5.json"
 
 output="$(python3 scripts/sidebar-ui.py --dump-render 2>&1)"
 
-assert_contains "$output" '%4 claude'
-assert_contains "$output" '%5 2.1.76'
+assert_contains "$output" 'claude'
+assert_contains "$output" '2.1.76'
 
 fake_tmux_set_tree <<'EOF'
 work|@1|editor|%6|zsh|zsh|1
@@ -68,9 +79,9 @@ EOF
 
 output="$(python3 scripts/sidebar-ui.py --dump-render 2>&1)"
 
-assert_contains "$output" '%6 zsh'
+assert_contains "$output" 'zsh'
 case "$output" in
-  *'%6 claude'* ) fail "stale claude state should not relabel obvious shell panes" ;;
+  *'│     └─ claude'* ) fail "stale claude state should not relabel obvious shell panes" ;;
 esac
 
 fake_tmux_set_tree <<'EOF'
