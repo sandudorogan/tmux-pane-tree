@@ -39,6 +39,7 @@ NON_AGENT_COMMANDS = {
     "yazi",
     "zsh",
 }
+SIDEBAR_TITLES = {"Sidebar", "tmux-sidebar"}
 
 
 def run_tmux(*args: str) -> str:
@@ -47,8 +48,8 @@ def run_tmux(*args: str) -> str:
 
 def badge_for_status(status: str) -> str:
     return {
-        "needs-input": "[!]",
-        "done": "[*]",
+        "needs-input": "[?]",
+        "done": "[!]",
         "error": "[x]",
         "running": "[~]",
     }.get(status, "")
@@ -190,9 +191,9 @@ def load_tree() -> list[dict]:
 
     for session in sessions.values():
         for window in session["windows"].values():
-            has_non_sidebar = any(pane["title"] != "tmux-sidebar" for pane in window["panes"])
+            has_non_sidebar = any(pane["title"] not in SIDEBAR_TITLES for pane in window["panes"])
             if has_non_sidebar:
-                window["panes"] = [pane for pane in window["panes"] if pane["title"] != "tmux-sidebar"]
+                window["panes"] = [pane for pane in window["panes"] if pane["title"] not in SIDEBAR_TITLES]
 
     pane_states: dict[str, dict] = {}
     STATE_DIR.mkdir(parents=True, exist_ok=True)
@@ -230,7 +231,7 @@ def load_tree() -> list[dict]:
                 pane_last = pane_index == len(window["panes"]) - 1
                 pane_state = pane_states.get(pane["id"], {})
                 badge = badge_for_status(str(pane_state.get("status", "")))
-                label = f"{pane['id']} {pane_display_label(pane['label'], pane['title'], pane_state)}"
+                label = pane_display_label(pane["label"], pane["title"], pane_state)
                 if badge:
                     label = f"{label} {badge}"
                 rows.append(
@@ -279,7 +280,23 @@ def focus_main_pane() -> None:
 
 
 def close_sidebar() -> None:
-    subprocess.run(["bash", str(Path(__file__).with_name("toggle-sidebar.sh"))], check=False)
+    script_path = Path(__file__).with_name("close-sidebar.sh")
+    pane_id = os.environ.get("TMUX_PANE", "")
+    window_id = ""
+    if pane_id:
+        try:
+            window_id = run_tmux("display-message", "-p", "-t", pane_id, "#{window_id}").strip()
+        except subprocess.CalledProcessError:
+            window_id = ""
+    shell_command = " ".join(
+        [
+            "bash",
+            shlex.quote(str(script_path)),
+            shlex.quote(pane_id),
+            shlex.quote(window_id),
+        ]
+    )
+    subprocess.run(["tmux", "run-shell", "-b", shell_command], check=False)
 
 
 def advance_shortcut_state(pending_key: str, key_char: str, shortcuts: dict[str, str]) -> tuple[str, str | None]:

@@ -1,3 +1,4 @@
+run-shell -b "#{d:current_file}/scripts/configure-pane-border-format.sh"
 bind-key t run-shell -b "#{d:current_file}/scripts/toggle-sidebar.sh"
 set-hook -g client-session-changed[200] "run-shell -b '#{d:current_file}/scripts/ensure-sidebar-pane.sh'"
 set-hook -g window-pane-changed[201] "run-shell -b '#{d:current_file}/scripts/ensure-sidebar-pane.sh'"
@@ -7,7 +8,7 @@ set-hook -g pane-focus-in[204] "run-shell -b '#{d:current_file}/scripts/remember
 set-hook -g pane-focus-in[205] "run-shell -b '#{d:current_file}/scripts/clear-pane-state.sh #{pane_id}'"
 set-hook -g after-split-window[206] "run-shell -b '#{d:current_file}/scripts/refresh-sidebar.sh'"
 set-hook -g after-new-window[207] "run-shell -b '#{d:current_file}/scripts/refresh-sidebar.sh'"
-set-hook -g pane-exited[208] "run-shell -b '#{d:current_file}/scripts/refresh-sidebar.sh'"
+set-hook -g pane-exited[208] "run-shell -b '#{d:current_file}/scripts/handle-pane-exited.sh #{hook_pane} #{hook_window}'"
 set-hook -g window-layout-changed[209] "run-shell -b '#{d:current_file}/scripts/refresh-sidebar.sh'"
 set-hook -g window-renamed[210] "run-shell -b '#{d:current_file}/scripts/refresh-sidebar.sh'"
 set-hook -g client-session-changed[211] "run-shell -b '#{d:current_file}/scripts/remember-main-pane.sh #{pane_id}'"

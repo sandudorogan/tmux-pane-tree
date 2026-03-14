@@ -11,6 +11,9 @@ export PATH="$TEST_BIN:$PATH"
 export TEST_TMUX_DATA_DIR="$TEST_TMP/tmux"
 : > "$TEST_TMUX_DATA_DIR/list_panes.txt"
 
+SIDEBAR_PANE_TITLE="Sidebar"
+SIDEBAR_LEGACY_PANE_TITLE="tmux-sidebar"
+
 fail() {
   printf 'FAIL: %s\n' "$1" >&2
   exit 1
@@ -83,11 +86,11 @@ fake_tmux_add_sidebar_pane() {
 session_name=
 window_id=$window_id
 window_name=
-pane_title=tmux-sidebar
+pane_title=$SIDEBAR_PANE_TITLE
 pane_current_command=python3
 window_index=0
 EOF
-  printf '%s|tmux-sidebar|%s\n' "$pane_id" "$window_id" >> "$TEST_TMUX_DATA_DIR/toggle_panes.txt"
+  printf '%s|%s|%s\n' "$pane_id" "$SIDEBAR_PANE_TITLE" "$window_id" >> "$TEST_TMUX_DATA_DIR/toggle_panes.txt"
 }
 
 fake_tmux_no_sidebar() {
@@ -104,7 +107,7 @@ fake_tmux_sidebar_count() {
     printf '0\n'
     return
   fi
-  awk -F'|' '$2=="tmux-sidebar" { count++ } END { print count + 0 }' "$TEST_TMUX_DATA_DIR/toggle_panes.txt"
+  awk -F'|' -v title="$SIDEBAR_PANE_TITLE" -v legacy_title="$SIDEBAR_LEGACY_PANE_TITLE" '$2==title || $2==legacy_title { count++ } END { print count + 0 }' "$TEST_TMUX_DATA_DIR/toggle_panes.txt"
 }
 
 fake_tmux_current_pane() {
@@ -255,10 +258,10 @@ case "$command_name" in
 session_name=$session_name
 window_id=$window_id
 window_name=$window_name
-pane_title=tmux-sidebar
+pane_title=Sidebar
 pane_current_command=python3
 METAEOF
-    printf '%%99|tmux-sidebar|%s\n' "$window_id" >> "$data_dir/toggle_panes.txt"
+    printf '%%99|Sidebar|%s\n' "$window_id" >> "$data_dir/toggle_panes.txt"
     printf '%%99\n'
     ;;
   select-layout)
@@ -286,10 +289,20 @@ METAEOF
   command-prompt)
     printf 'command-prompt %s\n' "$*" >> "$data_dir/commands.log"
     ;;
+  run-shell)
+    printf 'run-shell %s\n' "$*" >> "$data_dir/commands.log"
+    if [ "${1:-}" = "-b" ]; then
+      shift
+    fi
+    shell_command="${1:-}"
+    [ -n "$shell_command" ] || exit 0
+    bash -c "$shell_command"
+    ;;
   set-option)
     printf 'set-option %s\n' "$*" >> "$data_dir/commands.log"
     scope=""
     unset_flag="0"
+    target=""
     value=""
     option_name=""
     while [ "$#" -gt 0 ]; do
@@ -297,6 +310,10 @@ METAEOF
         -g|-p)
           scope="$1"
           shift
+          ;;
+        -t)
+          target="$2"
+          shift 2
           ;;
         -u)
           unset_flag="1"
@@ -355,7 +372,7 @@ METAEOF
       esac
     done
     if [ -f "$data_dir/toggle_panes.txt" ]; then
-      grep -Fv "${target}|tmux-sidebar" "$data_dir/toggle_panes.txt" > "$data_dir/toggle_panes.txt.next" || true
+      awk -F'|' -v target="$target" '$1 != target' "$data_dir/toggle_panes.txt" > "$data_dir/toggle_panes.txt.next" || true
       mv "$data_dir/toggle_panes.txt.next" "$data_dir/toggle_panes.txt"
     fi
     rm -f "$data_dir/pane_${target//%/}.meta"
@@ -363,6 +380,7 @@ METAEOF
   select-pane)
     printf 'select-pane %s\n' "$*" >> "$data_dir/commands.log"
     target=""
+    title=""
     while [ "$#" -gt 0 ]; do
       case "$1" in
         -t)
@@ -370,6 +388,7 @@ METAEOF
           shift 2
           ;;
         -T)
+          title="$2"
           shift 2
           ;;
         *)
@@ -377,6 +396,25 @@ METAEOF
           ;;
       esac
     done
+    if [ -n "$target" ] && [ -n "$title" ]; then
+      meta_file="$data_dir/pane_${target//%/}.meta"
+      if [ -f "$meta_file" ]; then
+        python3 - "$meta_file" "$title" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+title = sys.argv[2]
+updated = []
+for line in path.read_text().splitlines():
+    if line.startswith("pane_title="):
+        updated.append(f"pane_title={title}")
+    else:
+        updated.append(line)
+path.write_text("\n".join(updated) + "\n")
+PY
+      fi
+    fi
     if [ -n "$target" ]; then
       printf '%s\n' "$target" > "$data_dir/current_pane.txt"
     fi

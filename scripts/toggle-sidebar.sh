@@ -4,20 +4,11 @@ set -euo pipefail
 SCRIPT_DIR="$(CDPATH= cd -- "$(dirname "$0")" && pwd)"
 . "$SCRIPT_DIR/lib.sh"
 ensure_script="$SCRIPT_DIR/ensure-sidebar-pane.sh"
-
-clear_sidebar_state_options() {
-  tmux show-options -g 2>/dev/null \
-    | awk '/^@tmux_sidebar_(pane|creating|layout|panes|focus)_w/ { print $1 }' \
-    | while IFS= read -r option_name; do
-        [ -n "$option_name" ] || continue
-        tmux set-option -g -u "$option_name"
-      done
-}
+close_script="$SCRIPT_DIR/close-sidebar.sh"
 
 enabled="$(tmux show-options -gv @tmux_sidebar_enabled 2>/dev/null || printf '0\n')"
 sidebar_panes="$(
-  tmux list-panes -a -F '#{pane_id}|#{pane_title}|#{window_id}' \
-    | awk -F'|' '$2 == "tmux-sidebar" { print $1 "|" $3 }'
+  list_sidebar_panes
 )"
 
 if [ "$enabled" = "1" ] && [ -z "$sidebar_panes" ]; then
@@ -26,22 +17,14 @@ if [ "$enabled" = "1" ] && [ -z "$sidebar_panes" ]; then
 fi
 
 if [ "$enabled" = "1" ]; then
-  tmux set-option -g @tmux_sidebar_enabled 0
-  printf '%s\n' "$sidebar_panes" \
-    | while IFS='|' read -r pane_id window_id; do
-        [ -n "$pane_id" ] || continue
-        tmux kill-pane -t "$pane_id"
-        [ -n "$window_id" ] || continue
-        restore_sidebar_window_snapshot_if_unchanged "$window_id"
-      done
-  clear_sidebar_state_options
+  bash "$close_script"
   exit 0
 fi
 
 current_pane="$(tmux display-message -p '#{pane_id}' 2>/dev/null || true)"
 current_title="$(tmux display-message -p '#{pane_title}' 2>/dev/null || true)"
 current_window="$(tmux display-message -p '#{window_id}' 2>/dev/null || true)"
-if [ -n "$current_pane" ] && [ "$current_title" != "tmux-sidebar" ]; then
+if [ -n "$current_pane" ] && ! printf '%s\n' "$current_title" | grep -Eq "$(sidebar_title_pattern)"; then
   tmux set-option -g @tmux_sidebar_main_pane "$current_pane"
 fi
 

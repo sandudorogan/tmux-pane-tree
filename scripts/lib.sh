@@ -5,6 +5,29 @@ print_state_dir() {
   printf '%s\n' "${TMUX_SIDEBAR_STATE_DIR:-$HOME/.tmux-sidebar/state}"
 }
 
+sidebar_pane_title() {
+  printf '%s\n' 'Sidebar'
+}
+
+sidebar_legacy_pane_title() {
+  printf '%s\n' 'tmux-sidebar'
+}
+
+sidebar_title_pattern() {
+  printf '%s\n' "^($(sidebar_pane_title)|$(sidebar_legacy_pane_title))$"
+}
+
+is_sidebar_pane_title() {
+  local title="${1:-}"
+  local sidebar_titles
+  sidebar_titles="$(sidebar_title_pattern)"
+  [[ "$title" =~ $sidebar_titles ]]
+}
+
+sidebar_pane_border_format() {
+  printf '%s\n' '#{?#{m/r:^(Sidebar|tmux-sidebar)$,#{pane_title}},#{pane_title},#{E:@tmux_sidebar_base_pane_border_format}}'
+}
+
 sidebar_render_command() {
   local script_dir="$1"
   printf 'bash -lc %q' "\"$script_dir/render-sidebar.sh\"; exec cat"
@@ -71,10 +94,29 @@ option_is_enabled() {
 
 window_non_sidebar_panes_csv() {
   local window_id="$1"
+  local sidebar_titles
+  sidebar_titles="$(sidebar_title_pattern)"
   tmux list-panes -a -F '#{pane_id}|#{pane_title}|#{window_id}' \
-    | awk -F'|' -v current_window="$window_id" '$3 == current_window && $2 != "tmux-sidebar" { print $1 }' \
+    | awk -F'|' -v current_window="$window_id" -v sidebar_titles="$sidebar_titles" \
+        '$3 == current_window && $2 !~ sidebar_titles { print $1 }' \
     | LC_ALL=C sort \
     | paste -sd ',' -
+}
+
+list_sidebar_panes() {
+  local sidebar_titles
+  sidebar_titles="$(sidebar_title_pattern)"
+  tmux list-panes -a -F '#{pane_id}|#{pane_title}|#{window_id}' \
+    | awk -F'|' -v sidebar_titles="$sidebar_titles" '$2 ~ sidebar_titles { print $1 "|" $3 }'
+}
+
+clear_sidebar_state_options() {
+  tmux show-options -g 2>/dev/null \
+    | awk '/^@tmux_sidebar_(pane|creating|layout|panes|focus)_w/ { print $1 }' \
+    | while IFS= read -r option_name; do
+        [ -n "$option_name" ] || continue
+        tmux set-option -g -u "$option_name"
+      done
 }
 
 save_sidebar_window_snapshot() {
