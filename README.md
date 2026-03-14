@@ -75,6 +75,14 @@ Then `tmux source-file ~/.tmux.conf`.
 
 `<prefix> t` opens or closes the sidebar.
 
+### Focus
+
+`<prefix> T` toggles focus between the sidebar and your main pane:
+
+- **In sidebar** — returns to the pane you were in before
+- **Sidebar open** — moves focus into the sidebar
+- **Sidebar closed** — opens the sidebar and focuses it
+
 ### Navigation (inside the sidebar)
 
 | Key          | Action                           |
@@ -139,6 +147,15 @@ Shortcuts are validated on load. If any value is empty, duplicates another,
 overlaps as a prefix, or contains the reserved `q` key, all three revert to
 defaults.
 
+### Key overrides
+
+Override the default tmux keybindings for toggle and focus:
+
+```tmux
+set -g @tmux_sidebar_toggle_key  b    # default: t
+set -g @tmux_sidebar_focus_key   B    # default: T
+```
+
 ### Quick reference
 
 | Option                               | Default | Description                      |
@@ -149,6 +166,8 @@ defaults.
 | `@tmux_sidebar_add_window_shortcut`  |  `aw`   | Shortcut to add a window         |
 | `@tmux_sidebar_add_session_shortcut` |  `as`   | Shortcut to add a session        |
 | `@tmux_sidebar_close_pane_shortcut`  |   `x`   | Shortcut to close selected pane  |
+| `@tmux_sidebar_toggle_key`           |   `t`   | Tmux key to toggle sidebar       |
+| `@tmux_sidebar_focus_key`            |   `T`   | Tmux key to focus sidebar        |
 
 | Environment variable     | Description                                                                                    |
 | ------------------------ | ---------------------------------------------------------------------------------------------- |
