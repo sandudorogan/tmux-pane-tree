@@ -25,12 +25,9 @@ is_sidebar_pane_title() {
 }
 
 sidebar_pane_border_format() {
-  printf '%s\n' '#{?#{m/r:^(Sidebar|tmux-sidebar)$,#{pane_title}},#{pane_title},#{E:@tmux_sidebar_base_pane_border_format}}'
-}
-
-sidebar_render_command() {
-  local script_dir="$1"
-  printf 'bash -lc %q' "\"$script_dir/render-sidebar.sh\"; exec cat"
+  local pattern
+  pattern="$(sidebar_title_pattern)"
+  printf '#{?#{m/r:%s,#{pane_title}},#{pane_title},#{E:@tmux_sidebar_base_pane_border_format}}\n' "$pattern"
 }
 
 sidebar_ui_command() {

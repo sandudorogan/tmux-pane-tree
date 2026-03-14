@@ -45,6 +45,7 @@ if [ -z "$pane_id" ]; then
 fi
 
 [ -n "$pane_id" ] || exit 0
+[[ "$pane_id" =~ ^%[0-9]+$ ]] || { printf 'invalid pane_id: %s\n' "$pane_id" >&2; exit 1; }
 
 state_dir="$(print_state_dir)"
 mkdir -p "$state_dir"
@@ -53,6 +54,7 @@ state_file="$state_dir/pane-$pane_id.json"
 if [ -z "$updated_at" ]; then
   updated_at="$(date +%s)"
 fi
+[[ "$updated_at" =~ ^[0-9]+$ ]] || { printf 'invalid updated_at: %s\n' "$updated_at" >&2; exit 1; }
 
 if [ -f "$state_file" ]; then
   existing_updated_at="$(json_get_number "$state_file" "updated_at")"
