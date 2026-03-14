@@ -9,7 +9,7 @@ fake_tmux_register_pane "%1" "work" "@1" "editor" "nvim"
 bash scripts/toggle-sidebar.sh
 assert_eq "$(fake_tmux_sidebar_count)" "1"
 assert_eq "$(fake_tmux_current_pane)" "%99"
-assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'split-window -h -b -d -f -l 35'
+assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'split-window -h -b -d -f -l 25'
 assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'set-option -g @tmux_sidebar_main_pane %1'
 assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'set-option -g @tmux_sidebar_enabled 1'
 assert_file_not_contains "$TEST_TMUX_DATA_DIR/commands.log" 'sleep 1'

@@ -84,3 +84,19 @@ assert_contains "$output" '…'
 case "$output" in
   *'superlongpanecommand'* ) fail "sidebar UI should truncate long rows for narrow widths" ;;
 esac
+
+rm -f "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_width.txt"
+export TMUX_SIDEBAR_WIDTH=''
+python_width="$(
+python3 - <<'PY'
+import importlib.util
+from pathlib import Path
+
+spec = importlib.util.spec_from_file_location("sidebar_ui", Path("scripts/sidebar-ui.py"))
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+print(module.configured_sidebar_width())
+PY
+)"
+
+assert_eq "$python_width" "25"

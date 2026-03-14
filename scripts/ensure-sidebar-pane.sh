@@ -44,7 +44,7 @@ creating="$(tmux show-options -gv "$sidebar_creating_option" 2>/dev/null || true
 [ "$creating" != "1" ] || exit 0
 
 configured_sidebar_width="$(tmux show-options -gv @tmux_sidebar_width 2>/dev/null || true)"
-sidebar_width="${TMUX_SIDEBAR_WIDTH:-${configured_sidebar_width:-35}}"
+sidebar_width="${TMUX_SIDEBAR_WIDTH:-${configured_sidebar_width:-25}}"
 current_pane="$(tmux display-message -p '#{pane_id}')"
 sidebar_command="$(sidebar_ui_command "$SCRIPT_DIR")"
 focus_sidebar="$(tmux show-options -gv "$sidebar_focus_option" 2>/dev/null || true)"

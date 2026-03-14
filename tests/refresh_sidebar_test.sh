@@ -9,5 +9,5 @@ printf '1\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_enabled.txt"
 
 bash scripts/refresh-sidebar.sh
 
-assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'split-window -h -b -d -f -l 35'
+assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'split-window -h -b -d -f -l 25'
 assert_file_not_contains "$TEST_TMUX_DATA_DIR/commands.log" 'respawn-pane'

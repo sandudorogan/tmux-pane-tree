@@ -70,7 +70,7 @@ tmux source-file ~/.tmux.conf
 
 ## Configuration
 
-The sidebar width defaults to `35` columns.
+The sidebar width defaults to `25` columns.
 
 Set a custom width in your tmux config:
 
