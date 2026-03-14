@@ -288,6 +288,42 @@ METAEOF
     ;;
   command-prompt)
     printf 'command-prompt %s\n' "$*" >> "$data_dir/commands.log"
+    template=""
+    while [ "$#" -gt 0 ]; do
+      case "$1" in
+        -p|-I|-N|-t|-T)
+          shift 2
+          ;;
+        -1|-b|-F|-i|-k|-l)
+          shift
+          ;;
+        *)
+          template="$1"
+          shift
+          ;;
+      esac
+    done
+    if [ -n "${TEST_TMUX_PROMPT_RESPONSE:-}" ] && [ -n "$template" ]; then
+      expanded_template="$(
+        python3 - "$template" "$TEST_TMUX_PROMPT_RESPONSE" <<'PY'
+import sys
+
+template = sys.argv[1]
+response = sys.argv[2]
+
+if "%%%" in template:
+    template = template.replace("%%%", response.replace('"', '\\"'), 1)
+elif "%%" in template:
+    template = template.replace("%%", response, 1)
+
+template = template.replace("%1", response)
+print(template)
+PY
+      )"
+      printf 'command-prompt-exec %s\n' "$expanded_template" >> "$data_dir/commands.log"
+      eval "set -- $expanded_template"
+      "$0" "$@"
+    fi
     ;;
   run-shell)
     printf 'run-shell %s\n' "$*" >> "$data_dir/commands.log"

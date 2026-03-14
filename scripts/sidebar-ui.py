@@ -370,9 +370,12 @@ def advance_shortcut_state(pending_key: str, key_char: str, shortcuts: dict[str,
     return "", None
 
 
-def prompt_for_name(prompt: str, script_name: str, pane_id: str) -> None:
+def prompt_for_name(prompt: str, script_name: str, arguments: list[str]) -> None:
     script_path = Path(__file__).with_name(script_name)
-    shell_command = f"bash {shlex.quote(str(script_path))} --pane {shlex.quote(pane_id)} --name \"%%\""
+    shell_parts = ["bash", shlex.quote(str(script_path))]
+    shell_parts.extend(shlex.quote(argument) for argument in arguments)
+    shell_parts.extend(["--name", '"%%%"'])
+    shell_command = " ".join(shell_parts)
     subprocess.run(
         [
             "tmux",
@@ -386,11 +389,26 @@ def prompt_for_name(prompt: str, script_name: str, pane_id: str) -> None:
 
 
 def prompt_add_window(pane_id: str) -> None:
-    prompt_for_name("window name:", "add-window.sh", pane_id)
+    try:
+        metadata = run_tmux("display-message", "-p", "-t", pane_id, "#{session_name}|#{window_index}").strip()
+    except subprocess.CalledProcessError:
+        return
+    if not metadata:
+        return
+    session_name, window_index = metadata.split("|", 1)
+    if not session_name or not window_index:
+        return
+    prompt_for_name("window name:", "add-window.sh", ["--session", session_name, "--window-index", window_index])
 
 
 def prompt_add_session(pane_id: str) -> None:
-    prompt_for_name("session name:", "add-session.sh", pane_id)
+    try:
+        session_name = run_tmux("display-message", "-p", "-t", pane_id, "#{session_name}").strip()
+    except subprocess.CalledProcessError:
+        return
+    if not session_name:
+        return
+    prompt_for_name("session name:", "add-session.sh", ["--after-session", session_name])
 
 
 def pane_rows_for(rows: list[dict]) -> list[dict]:

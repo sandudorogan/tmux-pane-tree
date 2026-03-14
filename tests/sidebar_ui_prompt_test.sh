@@ -3,6 +3,9 @@ set -euo pipefail
 
 . "$(dirname "$0")/testlib.sh"
 
+fake_tmux_no_sidebar
+fake_tmux_register_pane "%1" "work" "@1" "editor" "nvim" "nvim" "4"
+
 python3 - <<'PY'
 import importlib.util
 from pathlib import Path
@@ -16,6 +19,6 @@ module.prompt_add_session("%1")
 PY
 
 assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'command-prompt -p window name:'
-assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'add-window.sh --pane %1 --name "%%"'
+assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'add-window.sh --session work --window-index 4 --name "%%%"'
 assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'command-prompt -p session name:'
-assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'add-session.sh --pane %1 --name "%%"'
+assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'add-session.sh --after-session work --name "%%%"'

@@ -3,11 +3,16 @@ set -euo pipefail
 
 pane_id=""
 name=""
+selected_session=""
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --pane)
       pane_id="${2:-}"
+      shift 2
+      ;;
+    --after-session)
+      selected_session="${2:-}"
       shift 2
       ;;
     --name)
@@ -21,12 +26,15 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
-if [ -z "$pane_id" ] || [ -z "${name//[[:space:]]/}" ]; then
+if [ -z "${name//[[:space:]]/}" ]; then
   exit 0
 fi
 
-selected_session="$(tmux display-message -p -t "$pane_id" '#{session_name}' 2>/dev/null || true)"
-[ -n "$selected_session" ] || exit 0
+if [ -z "$selected_session" ]; then
+  [ -n "$pane_id" ] || exit 0
+  selected_session="$(tmux display-message -p -t "$pane_id" '#{session_name}' 2>/dev/null || true)"
+  [ -n "$selected_session" ] || exit 0
+fi
 
 tmux new-session -d -s "$name"
 
