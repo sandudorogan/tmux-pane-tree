@@ -390,6 +390,8 @@ def load_tree() -> list[dict]:
         except Exception:
             continue
 
+    hide_panes = tmux_option("@tmux_sidebar_hide_panes").lower() in ("on", "1", "true", "yes")
+
     rows: list[dict] = []
     session_items = ordered_sessions(sessions)
     for session_index, session in enumerate(session_items):
@@ -402,16 +404,25 @@ def load_tree() -> list[dict]:
             window_last = window_index == len(windows) - 1
             window_prefix = session_prefix + ("   " if window_last else "│  ")
             display_name = window_display_name(window["name"], window["panes"], pane_states)
-            rows.append(
-                {
-                    "kind": "window",
-                    "session": session["name"],
-                    "window": window["id"],
-                    "text": f"{session_prefix}{'└─' if window_last else '├─'} {display_name}",
-                }
-            )
-            for pane_index, pane in enumerate(window["panes"]):
-                pane_last = pane_index == len(window["panes"]) - 1
+            visible_panes = window["panes"]
+            if hide_panes:
+                visible_panes = [
+                    pane for pane in window["panes"]
+                    if badge_for_status(effective_pane_status(
+                        pane["label"], pane["title"], pane_states.get(pane["id"], {}),
+                    ))
+                ]
+            window_row: dict = {
+                "kind": "window",
+                "session": session["name"],
+                "window": window["id"],
+                "text": f"{session_prefix}{'└─' if window_last else '├─'} {display_name}",
+            }
+            if hide_panes and not visible_panes:
+                window_row["pane_id"] = window["id"]
+            rows.append(window_row)
+            for pane_index, pane in enumerate(visible_panes):
+                pane_last = pane_index == len(visible_panes) - 1
                 pane_state = pane_states.get(pane["id"], {})
                 badge = badge_for_status(effective_pane_status(pane["label"], pane["title"], pane_state))
                 label = pane_display_label(pane["label"], pane["title"], pane_state)
@@ -445,7 +456,7 @@ def truncate_line(line: str, width: int | None) -> str:
 def render_rows(rows: list[dict], selected_pane_id: str | None = None, max_width: int | None = None) -> list[str]:
     rendered: list[str] = []
     selected_row = next(
-        (index for index, row in enumerate(rows) if row["kind"] == "pane" and row["pane_id"] == selected_pane_id),
+        (index for index, row in enumerate(rows) if row.get("pane_id") == selected_pane_id),
         None,
     )
     for index, row in enumerate(rows):
@@ -541,15 +552,24 @@ def prompt_add_session(pane_id: str) -> None:
 
 
 def pane_rows_for(rows: list[dict]) -> list[dict]:
-    return [row for row in rows if row["kind"] == "pane"]
+    return [row for row in rows if "pane_id" in row]
 
 
 def reconcile_selected_pane(selected_pane_id: str, pane_rows: list[dict]) -> str:
-    if pane_rows and not any(row["pane_id"] == selected_pane_id for row in pane_rows):
-        return pane_rows[0]["pane_id"]
     if not pane_rows:
         return ""
-    return selected_pane_id
+    if any(row["pane_id"] == selected_pane_id for row in pane_rows):
+        return selected_pane_id
+    if selected_pane_id.startswith("%"):
+        try:
+            window_id = run_tmux("display-message", "-p", "-t", selected_pane_id, "#{window_id}").strip()
+        except subprocess.CalledProcessError:
+            window_id = ""
+        if window_id:
+            window_row = next((row for row in pane_rows if row.get("window") == window_id), None)
+            if window_row is not None:
+                return window_row["pane_id"]
+    return pane_rows[0]["pane_id"]
 
 
 _cached_shortcuts: dict[str, str] | None = None
@@ -577,7 +597,7 @@ def load_view_state(selected_pane_id: str) -> tuple[list[dict], list[dict], dict
 
 def find_selected_row_index(rows: list[dict], selected_pane_id: str) -> int | None:
     return next(
-        (i for i, row in enumerate(rows) if row["kind"] == "pane" and row.get("pane_id") == selected_pane_id),
+        (i for i, row in enumerate(rows) if row.get("pane_id") == selected_pane_id),
         None,
     )
 
@@ -763,7 +783,7 @@ def run_interactive(stdscr) -> None:
         elif action == "add_session" and target is not None:
             prompt_add_session(target["pane_id"])
             next_refresh_at = 0.0
-        elif action == "close_pane" and target is not None:
+        elif action == "close_pane" and target is not None and target["kind"] == "pane":
             subprocess.run(["tmux", "kill-pane", "-t", target["pane_id"]], check=False)
             next_refresh_at = 0.0
         elif action == "close":
@@ -783,7 +803,8 @@ def run_interactive(stdscr) -> None:
                 check=False,
             )
             subprocess.run(["tmux", "select-window", "-t", target["window"]], check=False)
-            subprocess.run(["tmux", "select-pane", "-t", target["pane_id"]], check=False)
+            if target["kind"] == "pane":
+                subprocess.run(["tmux", "select-pane", "-t", target["pane_id"]], check=False)
             next_refresh_at = 0.0
 
 

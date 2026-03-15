@@ -165,6 +165,15 @@ set -g @tmux_sidebar_scrolloff 8      # default: 8
 Set to `0` for edge-only scrolling — the viewport scrolls only when the
 cursor reaches the very top or bottom.
 
+### Hide panes
+
+Show only sessions and windows in the tree, hiding individual panes. Panes
+with an active agent badge still appear under their window.
+
+```tmux
+set -g @tmux_sidebar_hide_panes on     # default: off
+```
+
 ### Key overrides
 
 Override the default tmux keybindings for toggle and focus:
@@ -184,6 +193,7 @@ set -g @tmux_sidebar_focus_key   B    # default: T
 | `@tmux_sidebar_add_window_shortcut`  |  `aw`   | Shortcut to add a window         |
 | `@tmux_sidebar_add_session_shortcut` |  `as`   | Shortcut to add a session        |
 | `@tmux_sidebar_close_pane_shortcut`  |   `x`   | Shortcut to close selected pane  |
+| `@tmux_sidebar_hide_panes`           |  `off`  | Show only sessions and windows   |
 | `@tmux_sidebar_scrolloff`            |   `8`   | Cursor scroll margin (like vim)  |
 | `@tmux_sidebar_toggle_key`           |   `t`   | Tmux key to toggle sidebar       |
 | `@tmux_sidebar_focus_key`            |   `T`   | Tmux key to focus sidebar        |
