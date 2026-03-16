@@ -389,3 +389,113 @@ PY
 # Only one window in session — should kill-session
 assert_contains "$output" 'kill-session -t solo'
 assert_not_contains "$output" 'kill-window'
+
+# Test p key toggles hide_panes
+fake_tmux_no_sidebar
+fake_tmux_set_tree <<'EOF'
+work|@1|editor|%1|nvim|nvim|1
+work|@1|editor|%2|claude|claude: running|0
+EOF
+
+export TMUX_SIDEBAR_STATE_DIR="$TEST_TMP/state"
+mkdir -p "$TMUX_SIDEBAR_STATE_DIR"
+
+output="$(python3 - <<'PY'
+import importlib.util
+import json
+from pathlib import Path
+
+spec = importlib.util.spec_from_file_location("sidebar_ui", Path("scripts/sidebar-ui.py"))
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+
+module.curses.curs_set = lambda _: None
+module.curses.mousemask = lambda _: (0, 0)
+module.curses.COLS = 40
+module.curses.LINES = 10
+
+module.configured_shortcuts = lambda: dict(module.DEFAULT_SHORTCUTS)
+module.sidebar_has_focus = lambda: True
+module.close_sidebar = lambda: None
+module.focus_main_pane = lambda: None
+module.prompt_add_window = lambda pane_id: None
+module.prompt_add_session = lambda pane_id: None
+
+hide_panes_state = {"value": "off"}
+
+original_tmux_option = module.tmux_option
+
+
+def fake_tmux_option(opt):
+    if opt == "@tmux_sidebar_hide_panes":
+        return hide_panes_state["value"]
+    return original_tmux_option(opt)
+
+
+module.tmux_option = fake_tmux_option
+
+tmux_commands = []
+original_run = __import__("subprocess").run
+
+
+def capture_run(args, **kwargs):
+    if args and args[0] == "tmux":
+        cmd = " ".join(args)
+        tmux_commands.append(cmd)
+        if "set" in args and "@tmux_sidebar_hide_panes" in args:
+            hide_panes_state["value"] = args[-1]
+        return original_run(["true"], **kwargs)
+    return original_run(args, **kwargs)
+
+
+__import__("subprocess").run = capture_run
+
+
+def fake_load_tree():
+    if hide_panes_state["value"] in ("on", "1", "true", "yes"):
+        return [
+            {"kind": "session", "text": "work", "session": "work"},
+            {"kind": "window", "text": "editor", "session": "work", "window": "@1", "pane_id": "@1"},
+        ]
+    return [
+        {"kind": "session", "text": "work", "session": "work"},
+        {"kind": "window", "text": "editor", "session": "work", "window": "@1"},
+        {"kind": "pane", "pane_id": "%1", "session": "work", "window": "@1", "text": "nvim", "active": True},
+        {"kind": "pane", "pane_id": "%2", "session": "work", "window": "@1", "text": "claude", "active": False},
+    ]
+
+
+module.load_tree = fake_load_tree
+
+class FakeScreen:
+    def __init__(self, keys):
+        self.keys = list(keys)
+        self.lines = {}
+        self.frames = []
+    def keypad(self, enabled): pass
+    def timeout(self, milliseconds): pass
+    def erase(self): self.lines = {}
+    def addnstr(self, y, x, text, limit, attr=0): self.lines[y] = text[:limit]
+    def refresh(self):
+        self.frames.append([self.lines.get(i, "") for i in range(module.curses.LINES)])
+    def getch(self):
+        if not self.keys:
+            raise AssertionError("getch called after key sequence ended")
+        return self.keys.pop(0)
+
+# Press p to toggle on, then p again to toggle off, then quit
+keys = [ord("p"), ord("p"), ord("q")]
+screen = FakeScreen(keys)
+module.run_interactive(screen)
+
+__import__("subprocess").run = original_run
+
+# Find the set commands
+set_commands = [c for c in tmux_commands if "set" in c and "@tmux_sidebar_hide_panes" in c]
+print(json.dumps({"set_commands": set_commands}, ensure_ascii=False, sort_keys=True))
+PY
+)"
+
+# First p should set to on, second should set back to off
+assert_contains "$output" '@tmux_sidebar_hide_panes on'
+assert_contains "$output" '@tmux_sidebar_hide_panes off'
