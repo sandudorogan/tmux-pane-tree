@@ -17,12 +17,15 @@ state_dir="$(print_state_dir)"
 rowmap_file="$state_dir/rowmap-${sidebar_pane}.json"
 menu_file="$state_dir/menu-cmd.tmux"
 
-[ -f "$rowmap_file" ] || exit 1
-
-# Look up the clicked row in the rowmap and extract all fields in one call.
-# The rowmap is written by sidebar-ui.py on every render with scroll_offset
-# so we can map screen y-coordinate back to the tree item.
-read -r kind session window pane_id < <(python3 -c "
+# If rowmap doesn't exist yet (first render not completed), treat as empty area.
+if [ ! -f "$rowmap_file" ]; then
+    kind="null"
+    session="" window="" pane_id=""
+else
+    # Look up the clicked row in the rowmap and extract all fields in one call.
+    # The rowmap is written by sidebar-ui.py on every render with scroll_offset
+    # so we can map screen y-coordinate back to the tree item.
+    read -r kind session window pane_id < <(python3 -c "
 import json, sys
 data = json.load(open('$rowmap_file'))
 rows = data.get('rows', [])
@@ -33,6 +36,7 @@ if 0 <= idx < len(rows):
 else:
     print('null', '', '', '')
 ")
+fi
 
 scripts_dir="$(pwd)"
 
