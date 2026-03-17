@@ -8,7 +8,7 @@ fake_tmux_register_pane "%1" "work" "@1" "editor" "nvim"
 fake_tmux_register_pane "%90" "work" "@1" "editor" "Sidebar" "python3"
 fake_tmux_add_sidebar_pane "%90" "@1"
 
-bash scripts/reload-sidebar-panes.sh
+bash scripts/features/sidebar/reload-sidebar-panes.sh
 
 assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'respawn-pane -k -t %90 python3'
 assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'sidebar-ui.py'

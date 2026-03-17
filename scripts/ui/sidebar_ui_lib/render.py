@@ -21,7 +21,7 @@ _last_row_map_json = ""
 
 
 def _scripts_dir() -> Path:
-    return Path(__file__).resolve().parent.parent
+    return Path(__file__).resolve().parents[2]
 
 
 def _write_row_map(rows: list[dict], scroll_offset: int) -> None:
@@ -40,11 +40,15 @@ def _write_row_map(rows: list[dict], scroll_offset: int) -> None:
     json_str = json.dumps(data)
     if json_str == _last_row_map_json:
         return
-    _last_row_map_json = json_str
     map_path = STATE_DIR / f"rowmap-{sidebar_pane}.json"
-    tmp = map_path.with_suffix(".tmp")
-    tmp.write_text(json_str)
-    tmp.rename(map_path)
+    try:
+        tmp = map_path.with_suffix(".tmp")
+        tmp.write_text(json_str)
+        tmp.rename(map_path)
+        _last_row_map_json = json_str
+    except OSError:
+        # Context menus are optional; keep the sidebar interactive if state files are unavailable.
+        return
 
 
 def _run_context_menu(mouse_y: int) -> None:
@@ -52,7 +56,7 @@ def _run_context_menu(mouse_y: int) -> None:
     if not sidebar_pane:
         return
     subprocess.Popen(
-        ["bash", str(_scripts_dir() / "show-context-menu.sh"), sidebar_pane, str(mouse_y)],
+        ["bash", str(_scripts_dir() / "features/context-menu/show-context-menu.sh"), sidebar_pane, str(mouse_y)],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )

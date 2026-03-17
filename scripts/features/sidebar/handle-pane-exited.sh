@@ -2,7 +2,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(CDPATH= cd -- "$(dirname "$0")" && pwd)"
-. "$SCRIPT_DIR/lib.sh"
+SCRIPTS_DIR="$(CDPATH= cd -- "$SCRIPT_DIR/../.." && pwd)"
+. "$SCRIPTS_DIR/core/lib.sh"
 pane_id="${1:-}"
 window_id="${2:-}"
 enabled="$(tmux show-options -gv @tmux_sidebar_enabled 2>/dev/null || printf '0\n')"

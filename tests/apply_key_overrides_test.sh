@@ -8,7 +8,7 @@ PLUGIN_DIR="$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)"
 # Test 1: No overrides set -> no bind/unbind commands
 fake_tmux_no_sidebar
 
-TMUX_SIDEBAR_PLUGIN_DIR="$PLUGIN_DIR" bash scripts/apply-key-overrides.sh
+TMUX_SIDEBAR_PLUGIN_DIR="$PLUGIN_DIR" bash scripts/features/sidebar/apply-key-overrides.sh
 
 assert_not_contains "$(cat "$TEST_TMUX_DATA_DIR/commands.log")" 'bind-key'
 assert_not_contains "$(cat "$TEST_TMUX_DATA_DIR/commands.log")" 'unbind-key'
@@ -17,7 +17,7 @@ assert_not_contains "$(cat "$TEST_TMUX_DATA_DIR/commands.log")" 'unbind-key'
 fake_tmux_no_sidebar
 printf 'b\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_toggle_key.txt"
 
-TMUX_SIDEBAR_PLUGIN_DIR="$PLUGIN_DIR" bash scripts/apply-key-overrides.sh
+TMUX_SIDEBAR_PLUGIN_DIR="$PLUGIN_DIR" bash scripts/features/sidebar/apply-key-overrides.sh
 
 assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'unbind-key t'
 assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'bind-key b run-shell'
@@ -26,7 +26,7 @@ assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'bind-key b run-shell'
 fake_tmux_no_sidebar
 printf 'B\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_focus_key.txt"
 
-TMUX_SIDEBAR_PLUGIN_DIR="$PLUGIN_DIR" bash scripts/apply-key-overrides.sh
+TMUX_SIDEBAR_PLUGIN_DIR="$PLUGIN_DIR" bash scripts/features/sidebar/apply-key-overrides.sh
 
 assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'unbind-key T'
 assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'bind-key B run-shell'
@@ -36,6 +36,6 @@ fake_tmux_no_sidebar
 printf 't\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_toggle_key.txt"
 printf 'T\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_focus_key.txt"
 
-TMUX_SIDEBAR_PLUGIN_DIR="$PLUGIN_DIR" bash scripts/apply-key-overrides.sh
+TMUX_SIDEBAR_PLUGIN_DIR="$PLUGIN_DIR" bash scripts/features/sidebar/apply-key-overrides.sh
 
 assert_not_contains "$(cat "$TEST_TMUX_DATA_DIR/commands.log")" 'unbind-key'

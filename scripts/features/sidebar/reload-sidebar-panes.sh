@@ -2,9 +2,10 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(CDPATH= cd -- "$(dirname "$0")" && pwd)"
-. "$SCRIPT_DIR/lib.sh"
+SCRIPTS_DIR="$(CDPATH= cd -- "$SCRIPT_DIR/../.." && pwd)"
+. "$SCRIPTS_DIR/core/lib.sh"
 
-sidebar_command="$(sidebar_ui_command "$SCRIPT_DIR")"
+sidebar_command="$(sidebar_ui_command "$SCRIPTS_DIR")"
 
 list_sidebar_panes \
   | while IFS='|' read -r pane_id _window_id; do

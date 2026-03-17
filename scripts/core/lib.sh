@@ -31,8 +31,8 @@ sidebar_pane_border_format() {
 }
 
 sidebar_ui_command() {
-  local script_dir="$1"
-  printf 'python3 %q' "$script_dir/sidebar-ui.py"
+  local scripts_dir="$1"
+  printf 'python3 %q' "$scripts_dir/ui/sidebar-ui.py"
 }
 
 json_escape() {

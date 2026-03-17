@@ -7,29 +7,23 @@ A tmux plugin that adds an interactive sidebar showing sessions, windows, and pa
 ```
 sidebar.tmux          <- TPM entry point, registers hooks and keybindings
 scripts/
-  lib.sh              <- shared bash utilities (state, tmux helpers, json)
-  sidebar-ui.py       <- compatibility entrypoint and interactive curses loop
-  sidebar_ui_lib/
-    core.py           <- tmux/config helpers, prompts, pane actions
-    status.py         <- live agent detection and badge selection
-    tree.py           <- tree loading, selection, search helpers
-    render.py         <- curses colors, drawing, row-map/context-menu IPC
-  toggle-sidebar.sh   <- main user-facing toggle (<prefix>t)
-  ensure-sidebar-pane.sh  <- creates/maintains sidebar pane per window
-  close-sidebar.sh    <- tears down all sidebar panes, restores layouts
-  apply-key-overrides.sh  <- rebinds toggle/focus keys from user options
-  update-pane-state.sh    <- agent hook entry point, writes pane JSON state
-  hook-claude.sh / hook-codex.sh  <- thin hook wrappers
-  hook-lib.sh         <- shared shell hook input handling
-  hook-parser.py      <- shared Claude/Codex event parsing
-  refresh-sidebar.sh  <- triggers sidebar re-render
-  remember-main-pane.sh   <- tracks last active non-sidebar pane
-  clear-pane-state.sh     <- clears agent badge on pane focus
-  focus-main-pane.sh      <- returns focus to main pane
-  focus-sidebar.sh        <- toggle focus between sidebar and main pane
-  handle-pane-exited.sh   <- cleanup when a pane exits
-  add-window.sh / add-session.sh  <- prompted creation of windows/sessions
-  configure-pane-border-format.sh <- pane border format wrapping
+  core/
+    lib.sh            <- shared bash utilities (state, tmux helpers, json)
+    hook-lib.sh       <- shared shell hook input handling
+    hook-parser.py    <- shared Claude/Codex event parsing
+  ui/
+    sidebar-ui.py     <- interactive curses loop entrypoint
+    sidebar_ui_lib/
+      core.py         <- tmux/config helpers, prompts, pane actions
+      status.py       <- live agent detection and badge selection
+      tree.py         <- tree loading, selection, search helpers
+      render.py       <- curses colors, drawing, row-map/context-menu IPC
+  features/
+    sidebar/          <- toggle/ensure/focus/close/render lifecycle helpers
+    hooks/            <- thin Claude/Codex hook wrappers
+    state/            <- pane-state writers and cleanup helpers
+    context-menu/     <- right-click menu integration
+    sessions/         <- prompted creation of windows/sessions
   install-live.sh     <- dev installer (copies to plugin dir, patches paths, reloads)
 tests/
   testlib.sh          <- test framework with fake tmux binary
@@ -70,12 +64,12 @@ tmux send-keys -t sidebar-test 'echo "test pane"' Enter
 
 # 3. Toggle sidebar in the test session
 tmux send-keys -t sidebar-test 'prefix' ''   # or trigger via:
-tmux run-shell -t sidebar-test "$HOME/.config/tmux/plugins/tmux-sidebar/scripts/toggle-sidebar.sh"
+tmux run-shell -t sidebar-test "$HOME/.config/tmux/plugins/tmux-sidebar/scripts/features/sidebar/toggle-sidebar.sh"
 
 # 4. Simulate agent state updates
-bash scripts/update-pane-state.sh --pane %0 --app claude --status running
-bash scripts/update-pane-state.sh --pane %0 --app claude --status needs-input
-bash scripts/update-pane-state.sh --pane %0 --app claude --status idle
+bash scripts/features/state/update-pane-state.sh --pane %0 --app claude --status running
+bash scripts/features/state/update-pane-state.sh --pane %0 --app claude --status needs-input
+bash scripts/features/state/update-pane-state.sh --pane %0 --app claude --status idle
 
 # 5. Clean up
 tmux kill-session -t sidebar-test
@@ -100,7 +94,7 @@ tmux source-file sidebar.tmux   # won't work — uses #{d:current_file}
 ### Bash
 
 - Always start with `#!/usr/bin/env bash` and `set -euo pipefail`
-- Source shared code via `. "$SCRIPT_DIR/lib.sh"` where `SCRIPT_DIR` is resolved with `CDPATH= cd`
+- Source shared code via `. "$SCRIPTS_DIR/core/lib.sh"` where `SCRIPTS_DIR` resolves to the repo `scripts/` directory
 - Use `printf` over `echo` for output
 - Quote all variable expansions: `"$var"`, `"${var:-default}"`
 - Prefer `[ condition ]` for simple tests, `[[ ]]` for pattern matching
@@ -108,7 +102,7 @@ tmux source-file sidebar.tmux   # won't work — uses #{d:current_file}
 - Suppress expected errors with `2>/dev/null || true`, not by removing `set -e`
 - Argument parsing uses `while [ "$#" -gt 0 ]; do case "$1" in ...` pattern
 - No unnecessary comments — code should be self-documenting
-- Functions go in `lib.sh` if reused across scripts
+- Functions go in `scripts/core/lib.sh` if reused across scripts
 - Use `awk` for structured text processing, not complex bash string manipulation
 - Temp files via `mktemp` with cleanup traps
 - Atomic file writes: write to tmp, then `mv`
@@ -147,6 +141,6 @@ tmux source-file sidebar.tmux   # won't work — uses #{d:current_file}
 
 - No fallback logic unless explicitly requested
 - Fail fast — `set -euo pipefail` in bash, no silent error swallowing
-- Separation of concerns: lib.sh for shared bash logic, hook-lib.sh/hook-parser.py for shared hook parsing, sidebar-ui.py as the UI entrypoint, and sidebar_ui_lib/ for focused Python UI modules
+- Separation of concerns: `scripts/core/lib.sh` for shared bash logic, `scripts/core/hook-lib.sh` and `scripts/core/hook-parser.py` for shared hook parsing, `scripts/ui/sidebar-ui.py` as the UI entrypoint, and `scripts/ui/sidebar_ui_lib/` for focused Python UI modules
 - Atomic state mutations — write to temp file then `mv` to avoid partial reads
 - Mutex via `tmux wait-for` for operations that race (e.g. ensure-sidebar-pane)

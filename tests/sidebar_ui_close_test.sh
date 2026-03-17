@@ -16,7 +16,7 @@ TMUX_PANE=%99 python3 - <<'PY'
 import importlib.util
 from pathlib import Path
 
-spec = importlib.util.spec_from_file_location("sidebar_ui", Path("scripts/sidebar-ui.py"))
+spec = importlib.util.spec_from_file_location("sidebar_ui", Path("scripts/ui/sidebar-ui.py"))
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 module.close_sidebar()

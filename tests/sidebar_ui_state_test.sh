@@ -14,7 +14,7 @@ ops|@3|logs|%9|tail|tail|0
 solo|@5|sidebar-only|%77|python3|Sidebar|0
 EOF
 
-output="$(python3 scripts/sidebar-ui.py --dump-render 2>&1)"
+output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
 case "$output" in
   *'invalid option:'* ) fail "sidebar UI should not leak tmux stderr for missing options" ;;
@@ -22,7 +22,7 @@ esac
 
 fake_tmux_register_main_pane "%9"
 
-output="$(python3 scripts/sidebar-ui.py --dump-render 2>&1)"
+output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
 assert_contains "$output" '├─ work'
 assert_contains "$output" '│     └─ claude'
@@ -39,7 +39,7 @@ work|@1|editor|%1|nvim|shell|0
 work|@1|editor|%99|python3|tmux-sidebar|0
 EOF
 
-output="$(python3 scripts/sidebar-ui.py --dump-render 2>&1)"
+output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
 case "$output" in
   *'%99 tmux-sidebar'* ) fail "legacy sidebar pane titles should still be hidden when window has other panes" ;;
@@ -50,7 +50,7 @@ work|@1|editor|%3|codex-aarch64-apple-darwin|codex-aarch64-apple-darwin|1
 EOF
 rm -f "$TMUX_SIDEBAR_STATE_DIR"/pane-*.json
 
-output="$(python3 scripts/sidebar-ui.py --dump-render 2>&1)"
+output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
 assert_contains "$output" 'codex'
 assert_not_contains "$output" '⏳'
@@ -67,7 +67,7 @@ cat > "$TMUX_SIDEBAR_STATE_DIR/pane-%4.json" <<'EOF'
 EOF
 rm -f "$TMUX_SIDEBAR_STATE_DIR/pane-%5.json"
 
-output="$(python3 scripts/sidebar-ui.py --dump-render 2>&1)"
+output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
 assert_contains "$output" 'claude'
 assert_not_contains "$output" '2.1.76'
@@ -79,7 +79,7 @@ cat > "$TMUX_SIDEBAR_STATE_DIR/pane-%6.json" <<'EOF'
 {"pane_id":"%6","app":"claude","status":"idle","updated_at":100}
 EOF
 
-output="$(python3 scripts/sidebar-ui.py --dump-render 2>&1)"
+output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
 assert_contains "$output" 'zsh'
 case "$output" in
@@ -93,7 +93,7 @@ cat > "$TMUX_SIDEBAR_STATE_DIR/pane-%7.json" <<'EOF'
 {"pane_id":"%7","app":"codex","status":"running","updated_at":100}
 EOF
 
-output="$(python3 scripts/sidebar-ui.py --dump-render 2>&1)"
+output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
 assert_contains "$output" 'zsh'
 case "$output" in
@@ -107,7 +107,7 @@ cat > "$TMUX_SIDEBAR_STATE_DIR/pane-%10.json" <<'EOF'
 {"pane_id":"%10","app":"claude","status":"running","updated_at":100}
 EOF
 
-output="$(python3 scripts/sidebar-ui.py --dump-render 2>&1)"
+output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
 assert_contains "$output" 'claude ⏳'
 
@@ -118,7 +118,7 @@ cat > "$TMUX_SIDEBAR_STATE_DIR/pane-%11.json" <<'EOF'
 {"pane_id":"%11","app":"codex","status":"running","updated_at":100}
 EOF
 
-output="$(python3 scripts/sidebar-ui.py --dump-render 2>&1)"
+output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
 assert_contains "$output" 'codex ⏳'
 
@@ -129,7 +129,7 @@ cat > "$TMUX_SIDEBAR_STATE_DIR/pane-%8.json" <<'EOF'
 {"pane_id":"%8","app":"codex","status":"running","updated_at":100}
 EOF
 
-output="$(python3 scripts/sidebar-ui.py --dump-render 2>&1)"
+output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
 assert_contains "$output" 'codex ⏳'
 
@@ -140,7 +140,7 @@ cat > "$TMUX_SIDEBAR_STATE_DIR/pane-%9.json" <<'EOF'
 {"pane_id":"%9","app":"codex","status":"done","updated_at":100}
 EOF
 
-output="$(python3 scripts/sidebar-ui.py --dump-render 2>&1)"
+output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
 assert_contains "$output" 'codex ✅'
 
@@ -151,7 +151,7 @@ cat > "$TMUX_SIDEBAR_STATE_DIR/pane-%12.json" <<'EOF'
 {"pane_id":"%12","app":"codex","status":"idle","updated_at":100}
 EOF
 
-output="$(python3 scripts/sidebar-ui.py --dump-render 2>&1)"
+output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
 assert_contains "$output" 'codex'
 assert_not_contains "$output" '⏳'
@@ -163,7 +163,7 @@ cat > "$TMUX_SIDEBAR_STATE_DIR/pane-%13.json" <<'EOF'
 {"pane_id":"%13","app":"codex","status":"idle","updated_at":100}
 EOF
 
-output="$(python3 scripts/sidebar-ui.py --dump-render 2>&1)"
+output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
 assert_contains "$output" 'codex'
 assert_not_contains "$output" '✅'
@@ -179,7 +179,7 @@ fake_tmux_set_capture "%14" <<'EOF'
 • Working (15s • esc to interrupt)
 EOF
 
-output="$(python3 scripts/sidebar-ui.py --dump-render 2>&1)"
+output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
 assert_contains "$output" 'codex'
 assert_contains "$output" '⏳'
@@ -191,7 +191,7 @@ cat > "$TMUX_SIDEBAR_STATE_DIR/pane-%15.json" <<'EOF'
 {"pane_id":"%15","app":"codex","status":"idle","pane_title":"● project: working on task","updated_at":100}
 EOF
 
-output="$(python3 scripts/sidebar-ui.py --dump-render 2>&1)"
+output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
 assert_contains "$output" 'codex'
 assert_not_contains "$output" '⏳'
@@ -201,7 +201,7 @@ work|@1|editor|%2|superlongpanecommand|superlongpanecommand|1
 EOF
 printf '14\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_width.txt"
 
-output="$(python3 scripts/sidebar-ui.py --dump-render 2>&1)"
+output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
 assert_contains "$output" '…'
 case "$output" in
@@ -215,7 +215,7 @@ python3 - <<'PY'
 import importlib.util
 from pathlib import Path
 
-spec = importlib.util.spec_from_file_location("sidebar_ui", Path("scripts/sidebar-ui.py"))
+spec = importlib.util.spec_from_file_location("sidebar_ui", Path("scripts/ui/sidebar-ui.py"))
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 print(module.configured_sidebar_width())
@@ -237,7 +237,7 @@ cat > "$TMUX_SIDEBAR_STATE_DIR/pane-%20.json" <<'EOF'
 {"pane_id":"%20","app":"claude","status":"needs-input","updated_at":100}
 EOF
 
-output="$(python3 scripts/sidebar-ui.py --dump-render 2>&1)"
+output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
 window_line="$(printf '%s\n' "$output" | grep -E '^\s+[├└]─' | sed -n '2p')"
 assert_contains "$window_line" 'claude'
@@ -248,7 +248,7 @@ work|@1|2.1.76|%23|2.1.76|2.1.76|1
 EOF
 rm -f "$TMUX_SIDEBAR_STATE_DIR"/pane-*.json
 
-output="$(python3 scripts/sidebar-ui.py --dump-render 2>&1)"
+output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
 assert_contains "$output" 'claude'
 assert_not_contains "$output" '2.1.76'
@@ -260,7 +260,7 @@ cat > "$TMUX_SIDEBAR_STATE_DIR/pane-%24.json" <<'EOF'
 {"pane_id":"%24","app":"claude","status":"running","updated_at":100}
 EOF
 
-output="$(python3 scripts/sidebar-ui.py --dump-render 2>&1)"
+output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
 assert_contains "$output" '└─ myproject'
 case "$output" in
@@ -277,7 +277,7 @@ cat > "$TMUX_SIDEBAR_STATE_DIR/pane-%27.json" <<'EOF'
 {"pane_id":"%27","app":"claude","status":"running","updated_at":100}
 EOF
 
-output="$(python3 scripts/sidebar-ui.py --dump-render 2>&1)"
+output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
 window_line="$(printf '%s\n' "$output" | grep -E '^\s+[├└]─' | sed -n '2p')"
 assert_contains "$window_line" 'claude'
@@ -288,7 +288,7 @@ work|@1|editor|%30|2.1.76|⠂ Claude Code|1
 EOF
 rm -f "$TMUX_SIDEBAR_STATE_DIR"/pane-*.json
 
-output="$(python3 scripts/sidebar-ui.py --dump-render 2>&1)"
+output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
 assert_contains "$output" 'claude ⏳'
 assert_not_contains "$output" '2.1.76'
@@ -298,7 +298,7 @@ work|@1|editor|%31|2.1.76|● sandu.dorogan: done|1
 EOF
 rm -f "$TMUX_SIDEBAR_STATE_DIR"/pane-*.json
 
-output="$(python3 scripts/sidebar-ui.py --dump-render 2>&1)"
+output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
 assert_contains "$output" 'claude ✅'
 assert_not_contains "$output" '2.1.76'
@@ -308,6 +308,6 @@ work|@1|editor|%32|2.1.76|● project: error|1
 EOF
 rm -f "$TMUX_SIDEBAR_STATE_DIR"/pane-*.json
 
-output="$(python3 scripts/sidebar-ui.py --dump-render 2>&1)"
+output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
 assert_contains "$output" 'claude ❌'

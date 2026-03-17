@@ -2,7 +2,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(CDPATH= cd -- "$(dirname "$0")" && pwd)"
-. "$SCRIPT_DIR/lib.sh"
+SCRIPTS_DIR="$(CDPATH= cd -- "$SCRIPT_DIR/../.." && pwd)"
+. "$SCRIPTS_DIR/core/lib.sh"
 
 current_pane_title="$(tmux display-message -p '#{pane_title}' 2>/dev/null || true)"
 current_window="$(tmux display-message -p '#{window_id}' 2>/dev/null || true)"

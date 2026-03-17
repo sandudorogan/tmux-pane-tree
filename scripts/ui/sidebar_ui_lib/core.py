@@ -34,7 +34,11 @@ DEFAULT_SCROLLOFF = 8
 
 
 def scripts_dir() -> Path:
-    return Path(__file__).resolve().parent.parent
+    return Path(__file__).resolve().parents[2]
+
+
+def feature_script(*parts: str) -> Path:
+    return scripts_dir().joinpath("features", *parts)
 
 
 def run_tmux(*args: str) -> str:
@@ -111,7 +115,7 @@ def sidebar_has_focus() -> bool:
 
 
 def focus_main_pane() -> None:
-    subprocess.run(["bash", str(scripts_dir() / "focus-main-pane.sh")], check=False)
+    subprocess.run(["bash", str(feature_script("sidebar", "focus-main-pane.sh"))], check=False)
 
 
 def toggle_hide_panes() -> None:
@@ -121,7 +125,7 @@ def toggle_hide_panes() -> None:
 
 
 def close_sidebar() -> None:
-    script_path = scripts_dir() / "close-sidebar.sh"
+    script_path = feature_script("sidebar", "close-sidebar.sh")
     pane_id = os.environ.get("TMUX_PANE", "")
     window_id = ""
     if pane_id:
@@ -168,7 +172,11 @@ def prompt_add_window(pane_id: str) -> None:
     session_name, window_index = metadata.split("|", 1)
     if not session_name or not window_index:
         return
-    prompt_for_name("window name:", "add-window.sh", ["--session", session_name, "--window-index", window_index])
+    prompt_for_name(
+        "window name:",
+        "features/sessions/add-window.sh",
+        ["--session", session_name, "--window-index", window_index],
+    )
 
 
 def prompt_add_session(pane_id: str) -> None:
@@ -178,4 +186,4 @@ def prompt_add_session(pane_id: str) -> None:
         return
     if not session_name:
         return
-    prompt_for_name("session name:", "add-session.sh", ["--after-session", session_name])
+    prompt_for_name("session name:", "features/sessions/add-session.sh", ["--after-session", session_name])

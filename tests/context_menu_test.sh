@@ -5,7 +5,7 @@ CDPATH= cd -- "$(dirname "$0")" || exit 1
 SCRIPT_DIR="$(pwd)"
 . ./testlib.sh
 
-SIDEBAR_UI="$SCRIPT_DIR/../scripts/sidebar-ui.py"
+SIDEBAR_UI="$SCRIPT_DIR/../scripts/ui/sidebar-ui.py"
 
 test_m_key_returns_context_menu_action() {
     output="$(python3 -c "

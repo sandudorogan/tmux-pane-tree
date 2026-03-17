@@ -6,13 +6,13 @@ set -euo pipefail
 export TMUX_SIDEBAR_STATE_DIR="$TEST_TMP/state"
 fake_tmux_register_pane "%7" "work" "@2" "editor" "Claude"
 
-bash scripts/update-pane-state.sh \
+bash scripts/features/state/update-pane-state.sh \
   --pane "%7" \
   --app claude \
   --status done \
   --updated-at 200
 
-bash scripts/update-pane-state.sh \
+bash scripts/features/state/update-pane-state.sh \
   --pane "%7" \
   --app claude \
   --status running \

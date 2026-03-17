@@ -7,8 +7,9 @@ set -euo pipefail
 # The calling tmux binding then source-files this to open the menu
 # in the mouse event context (so -xM -yM and hold-release work).
 
-CDPATH= cd -- "$(dirname "$0")" || exit 1
-. ./lib.sh
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname "$0")" && pwd)"
+SCRIPTS_DIR="$(CDPATH= cd -- "$SCRIPT_DIR/../.." && pwd)"
+. "$SCRIPTS_DIR/core/lib.sh"
 
 sidebar_pane="${1:?sidebar pane id required}"
 mouse_y="${2:-0}"
@@ -38,7 +39,7 @@ else:
 ")
 fi
 
-scripts_dir="$(pwd)"
+sidebar_scripts_dir="$SCRIPTS_DIR/features/sidebar"
 
 # Escape single quotes for tmux command strings (POSIX: ' → '\'' )
 escape_tmux() { printf '%s' "$1" | sed "s/'/'\\\\''/g"; }
@@ -50,8 +51,8 @@ display-menu -xM -yM -T "#[align=centre] Sidebar " \
   "New Session" "s" "command-prompt -p 'session name:' \"new-session -d -s '%%' \\\\; switch-client -t '%%'\"" \
   "New Window"  "w" "new-window" \
   "" "" "" \
-  "Refresh"       "r" "run-shell -b 'bash $scripts_dir/refresh-sidebar.sh'" \
-  "Close Sidebar" "q" "run-shell -b 'bash $scripts_dir/close-sidebar.sh'"
+  "Refresh"       "r" "run-shell -b 'bash $sidebar_scripts_dir/refresh-sidebar.sh'" \
+  "Close Sidebar" "q" "run-shell -b 'bash $sidebar_scripts_dir/close-sidebar.sh'"
 TMUX
     exit 0
 fi

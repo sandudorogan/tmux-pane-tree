@@ -122,9 +122,9 @@ The shell script uses `mouse_y + scroll_offset` to index into the rows array and
 | File | Role |
 |------|------|
 | `sidebar.tmux` | Registers `bind-context-menu.sh` via `run-shell -b` |
-| `scripts/bind-context-menu.sh` | Writes and source-files the `MouseDown3Pane` tmux binding |
-| `scripts/show-context-menu.sh` | Reads rowmap, writes context-sensitive `display-menu` command |
-| `scripts/sidebar-ui.py` | Writes rowmap JSON on render; `m` key triggers fallback menu |
+| `scripts/features/context-menu/bind-context-menu.sh` | Writes and source-files the `MouseDown3Pane` tmux binding |
+| `scripts/features/context-menu/show-context-menu.sh` | Reads rowmap, writes context-sensitive `display-menu` command |
+| `scripts/ui/sidebar-ui.py` | Writes rowmap JSON on render; `m` key triggers fallback menu |
 
 ## Menu Items
 

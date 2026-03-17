@@ -73,10 +73,14 @@ def _write_pid_file() -> None:
     pid_path = _pid_file_path()
     if pid_path is None:
         return
-    STATE_DIR.mkdir(parents=True, exist_ok=True)
-    tmp = pid_path.with_suffix(".tmp")
-    tmp.write_text(str(os.getpid()))
-    tmp.rename(pid_path)
+    try:
+        STATE_DIR.mkdir(parents=True, exist_ok=True)
+        tmp = pid_path.with_suffix(".tmp")
+        tmp.write_text(str(os.getpid()))
+        tmp.rename(pid_path)
+    except OSError:
+        # The sidebar still works without refresh signaling; treat the pid file as best-effort.
+        return
 
 
 def _remove_pid_file() -> None:

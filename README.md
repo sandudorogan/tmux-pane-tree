@@ -239,10 +239,10 @@ set -g @tmux_sidebar_focus_key   B    # default: T
 
 ## Hook Integration
 
-Agents report their status through `scripts/update-pane-state.sh`:
+Agents report their status through `scripts/features/state/update-pane-state.sh`:
 
 ```bash
-~/.tmux/plugins/tmux-sidebar/scripts/update-pane-state.sh \
+~/.tmux/plugins/tmux-sidebar/scripts/features/state/update-pane-state.sh \
   --pane "$TMUX_PANE" \
   --app claude \
   --status needs-input \
@@ -261,7 +261,7 @@ Ready-to-use hook wrappers live in `examples/`:
 - **`examples/opencode-hook.sh`** — reads `OPENCODE_STATUS` and
   `OPENCODE_MESSAGE`
 
-The built-in `scripts/hook-claude.sh` and `scripts/hook-codex.sh` provide
+The built-in `scripts/features/hooks/hook-claude.sh` and `scripts/features/hooks/hook-codex.sh` provide
 richer event parsing if you need finer-grained status mapping.
 
 ## Requirements
@@ -279,20 +279,27 @@ helpers:
 
 ```text
 scripts/
-  sidebar-ui.py            <- compatibility entrypoint and interactive loop
-  sidebar_ui_lib/
-    core.py                <- tmux/config helpers, prompts, pane actions
-    status.py              <- live agent detection, badge selection
-    tree.py                <- tree loading, selection, search helpers
-    render.py              <- curses colors, drawing, row-map/context-menu IPC
-  hook-claude.sh           <- Claude hook wrapper
-  hook-codex.sh            <- Codex hook wrapper
-  hook-lib.sh              <- shared shell hook input handling
-  hook-parser.py           <- shared Claude/Codex event parsing
+  core/
+    lib.sh                 <- shared bash utilities
+    hook-lib.sh            <- shared shell hook input handling
+    hook-parser.py         <- shared Claude/Codex event parsing
+  ui/
+    sidebar-ui.py          <- interactive loop entrypoint
+    sidebar_ui_lib/
+      core.py              <- tmux/config helpers, prompts, pane actions
+      status.py            <- live agent detection, badge selection
+      tree.py              <- tree loading, selection, search helpers
+      render.py            <- curses colors, drawing, row-map/context-menu IPC
+  features/
+    sidebar/               <- pane lifecycle, focus, rendering, reload helpers
+    hooks/                 <- Claude/Codex hook wrappers
+    state/                 <- pane-state file writers/cleanup
+    context-menu/          <- right-click menu integration
+    sessions/              <- prompted window/session creation helpers
 ```
 
-`sidebar-ui.py` remains the import surface used by the tests, while the
-implementation details live under `scripts/sidebar_ui_lib/`.
+`scripts/ui/sidebar-ui.py` remains the import surface used by the tests, while the
+implementation details live under `scripts/ui/sidebar_ui_lib/`.
 
 ### Tests
 
@@ -317,11 +324,11 @@ respawns every open sidebar pane. It also keeps agent hooks in
 `~/.claude/settings.json` and `~/.codex/config.toml` pointing at the installed
 copy.
 
-If you only changed `sidebar-ui.py` and want to skip the full install, you can
+If you only changed `scripts/ui/sidebar-ui.py` and want to skip the full install, you can
 respawn the sidebar panes directly:
 
 ```bash
-bash scripts/reload-sidebar-panes.sh
+bash scripts/features/sidebar/reload-sidebar-panes.sh
 ```
 
 ## License

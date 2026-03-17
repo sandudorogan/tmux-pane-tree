@@ -12,7 +12,7 @@ printf '%%99\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_pane_w1.txt"
 printf 'layout-before\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_layout_w1.txt"
 printf '%%1,%%2\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_panes_w1.txt"
 
-bash scripts/close-sidebar.sh %99 @1
+bash scripts/features/sidebar/close-sidebar.sh %99 @1
 
 assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'set-option -g @tmux_sidebar_enabled 0'
 assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'select-layout -t @1 layout-before'

@@ -5,7 +5,8 @@ enabled="$(tmux show-options -gv @tmux_sidebar_enabled 2>/dev/null || printf '0\
 [ "$enabled" = "1" ] || exit 0
 
 SCRIPT_DIR="$(CDPATH= cd -- "$(dirname "$0")" && pwd)"
-. "$SCRIPT_DIR/lib.sh"
+SCRIPTS_DIR="$(CDPATH= cd -- "$SCRIPT_DIR/../.." && pwd)"
+. "$SCRIPTS_DIR/core/lib.sh"
 sidebar_titles="$(sidebar_title_pattern)"
 target_pane="${1:-}"
 current_window="${2:-}"
@@ -73,7 +74,7 @@ fi
 if [ -z "$current_pane" ]; then
   current_pane="$(tmux display-message -p '#{pane_id}' 2>/dev/null || true)"
 fi
-sidebar_command="$(sidebar_ui_command "$SCRIPT_DIR")"
+sidebar_command="$(sidebar_ui_command "$SCRIPTS_DIR")"
 focus_sidebar="$(tmux show-options -gv "$sidebar_focus_option" 2>/dev/null || true)"
 
 save_sidebar_window_snapshot "$current_window" "$current_pane"

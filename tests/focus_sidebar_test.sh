@@ -12,7 +12,7 @@ printf '1\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_enabled.txt"
 fake_tmux_register_main_pane "%1"
 printf '%%99\n' > "$TEST_TMUX_DATA_DIR/current_pane.txt"
 
-bash scripts/focus-sidebar.sh
+bash scripts/features/sidebar/focus-sidebar.sh
 
 assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'select-pane -t %1'
 assert_eq "$(fake_tmux_current_pane)" "%1"
@@ -27,7 +27,7 @@ printf '1\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_enabled.txt"
 fake_tmux_register_main_pane "%2"
 printf '%%99\n' > "$TEST_TMUX_DATA_DIR/current_pane.txt"
 
-bash scripts/focus-sidebar.sh
+bash scripts/features/sidebar/focus-sidebar.sh
 
 assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'select-pane -t %1'
 assert_eq "$(fake_tmux_current_pane)" "%1"
@@ -41,7 +41,7 @@ printf '1\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_enabled.txt"
 fake_tmux_register_main_pane "%50"
 printf '%%99\n' > "$TEST_TMUX_DATA_DIR/current_pane.txt"
 
-bash scripts/focus-sidebar.sh
+bash scripts/features/sidebar/focus-sidebar.sh
 
 assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'select-pane -t %1'
 assert_eq "$(fake_tmux_current_pane)" "%1"
@@ -54,7 +54,7 @@ fake_tmux_add_sidebar_pane "%99" "@1"
 printf '1\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_enabled.txt"
 printf '%%99\n' > "$TEST_TMUX_DATA_DIR/current_pane.txt"
 
-bash scripts/focus-sidebar.sh
+bash scripts/features/sidebar/focus-sidebar.sh
 
 assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'select-pane -t %1'
 assert_eq "$(fake_tmux_current_pane)" "%1"
@@ -66,7 +66,7 @@ fake_tmux_register_pane "%99" "work" "@1" "editor" "Sidebar" "python3"
 fake_tmux_add_sidebar_pane "%99" "@1"
 printf '1\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_enabled.txt"
 
-bash scripts/focus-sidebar.sh
+bash scripts/features/sidebar/focus-sidebar.sh
 
 assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'select-pane -t %99'
 assert_eq "$(fake_tmux_current_pane)" "%99"
@@ -75,7 +75,7 @@ assert_eq "$(fake_tmux_current_pane)" "%99"
 fake_tmux_no_sidebar
 fake_tmux_register_pane "%1" "work" "@1" "editor" "nvim"
 
-bash scripts/focus-sidebar.sh
+bash scripts/features/sidebar/focus-sidebar.sh
 
 assert_eq "$(fake_tmux_sidebar_count)" "1"
 assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'set-option -g @tmux_sidebar_enabled 1'
@@ -86,7 +86,7 @@ fake_tmux_no_sidebar
 fake_tmux_register_pane "%1" "work" "@1" "editor" "nvim"
 printf '0\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_focus_on_open.txt"
 
-bash scripts/focus-sidebar.sh
+bash scripts/features/sidebar/focus-sidebar.sh
 
 assert_eq "$(fake_tmux_sidebar_count)" "1"
 assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'set-option -g @tmux_sidebar_focus_w1 1'

@@ -23,7 +23,7 @@ cat > "$TMUX_SIDEBAR_STATE_DIR/pane-%11.json" <<'EOF'
 {"pane_id":"%11","app":"codex","status":"running","updated_at":100}
 EOF
 
-output="$(bash scripts/render-sidebar.sh)"
+output="$(bash scripts/features/sidebar/render-sidebar.sh)"
 
 case "$output" in
   *"├─ work"* ) ;;
@@ -66,7 +66,7 @@ ops|@3|logs|%9|tail|tail|0
 EOF
 printf 'ops,work\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_session_order.txt"
 
-output="$(bash scripts/render-sidebar.sh)"
+output="$(bash scripts/features/sidebar/render-sidebar.sh)"
 first_session_line="$(printf '%s\n' "$output" | grep -E '^[[:space:]]*[├└]─ ' | head -n 1)"
 
 assert_eq "$first_session_line" '  ├─ ops'
