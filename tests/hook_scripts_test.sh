@@ -57,11 +57,6 @@ export TEST_HOOK_CAPTURE="$TEST_TMP/codex-hook-json-arg.txt"
 bash scripts/hook-codex.sh '{"type":"agent-turn-complete","summary":"Finished task"}'
 assert_file_contains "$TEST_HOOK_CAPTURE" '--status done'
 
-export TEST_HOOK_CAPTURE="$TEST_TMP/codex-hook-running.txt"
-printf '%s' '{"summary":"Working"}' | bash scripts/hook-codex.sh
-assert_file_contains "$TEST_HOOK_CAPTURE" '--app codex'
-assert_file_contains "$TEST_HOOK_CAPTURE" '--status running'
-
 export TEST_HOOK_CAPTURE="$TEST_TMP/codex-hook-input.txt"
 printf '%s' '{"notification_type":"permission_prompt","message":"Need approval"}' | bash scripts/hook-codex.sh
 assert_file_contains "$TEST_HOOK_CAPTURE" '--status needs-input'
@@ -70,18 +65,19 @@ export TEST_HOOK_CAPTURE="$TEST_TMP/codex-hook-idle-prompt.txt"
 printf '%s' '{"notification_type":"idle_prompt"}' | bash scripts/hook-codex.sh
 assert_file_contains "$TEST_HOOK_CAPTURE" '--status idle'
 
-export TEST_HOOK_CAPTURE="$TEST_TMP/codex-hook-start.txt"
-printf '%s' '{"summary":"Ready"}' | bash scripts/hook-codex.sh start
+export TEST_HOOK_CAPTURE="$TEST_TMP/codex-hook-running-status.txt"
+printf '%s' '{"status":"running"}' | bash scripts/hook-codex.sh
 assert_file_contains "$TEST_HOOK_CAPTURE" '--status running'
 
-export TEST_HOOK_CAPTURE="$TEST_TMP/codex-hook-session-start.txt"
-printf '%s' '{"summary":"Ready"}' | bash scripts/hook-codex.sh session-start
-assert_file_contains "$TEST_HOOK_CAPTURE" '--status idle'
-
-export TEST_HOOK_CAPTURE="$TEST_TMP/codex-hook-idle-status.txt"
-printf '%s' '{"status":"idle"}' | bash scripts/hook-codex.sh
-assert_file_contains "$TEST_HOOK_CAPTURE" '--status idle'
-
-export TEST_HOOK_CAPTURE="$TEST_TMP/codex-hook-empty.txt"
+export TEST_HOOK_CAPTURE="$TEST_TMP/codex-hook-noise-skipped.txt"
+rm -f "$TEST_HOOK_CAPTURE"
 printf '' | bash scripts/hook-codex.sh
-assert_file_contains "$TEST_HOOK_CAPTURE" '--status idle'
+[ ! -f "$TEST_HOOK_CAPTURE" ] || fail "empty codex events should be skipped"
+
+rm -f "$TEST_HOOK_CAPTURE"
+printf '%s' '{"summary":"Working"}' | bash scripts/hook-codex.sh
+[ ! -f "$TEST_HOOK_CAPTURE" ] || fail "ambiguous codex events should be skipped"
+
+rm -f "$TEST_HOOK_CAPTURE"
+printf '%s' '{"summary":"Ready"}' | bash scripts/hook-codex.sh session-start
+[ ! -f "$TEST_HOOK_CAPTURE" ] || fail "session-start noise should be skipped"

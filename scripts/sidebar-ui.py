@@ -370,8 +370,6 @@ def effective_pane_status(command: str, title: str, state: dict | None) -> str:
 
     status = str((state or {}).get("status", "")).strip().lower()
     if live_app == "codex":
-        if status == "idle":
-            return ""
         if status in ("running", "needs-input", "error", "done"):
             return status
         title_status = codex_title_status(title)

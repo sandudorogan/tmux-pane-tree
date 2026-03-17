@@ -8,20 +8,17 @@ MESSAGE="${CODEX_MESSAGE:-}"
 
 status=""
 case "$EVENT" in
+  agent-turn-complete|complete|completed|done|finish|finished|stop|stopped|task-complete|turn-complete|session-end)
+    status="done"
+    ;;
   error|fail|failure)
     status="error"
     ;;
   permission*|approve*|approval-requested|input-required)
     status="needs-input"
     ;;
-  session-start|idle-prompt)
+  idle-prompt)
     status="idle"
-    ;;
-  start)
-    status="running"
-    ;;
-  agent-turn-complete|complete|completed|done|finish|finished|stop|stopped|task-complete|turn-complete|session-end)
-    status="done"
     ;;
 esac
 
@@ -29,12 +26,12 @@ if [ -z "$status" ]; then
   case "$RAW_STATUS" in
     running)        status="running" ;;
     error|failed)   status="error" ;;
-    idle|ready)     status="idle" ;;
     done|completed|finished|stopped) status="done" ;;
     needs-input)    status="needs-input" ;;
-    *)              status="${RAW_STATUS:-done}" ;;
   esac
 fi
+
+[ -n "$status" ] || exit 0
 
 exec "$PLUGIN_DIR/scripts/update-pane-state.sh" \
   --pane "${TMUX_PANE:-}" \

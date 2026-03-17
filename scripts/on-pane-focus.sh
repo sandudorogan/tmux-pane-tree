@@ -22,6 +22,7 @@ if [ -n "$pane_id" ]; then
       app="$(json_get_string "$state_file" "app")"
       status="$(json_get_string "$state_file" "status")"
       case "$app:$status" in
+        codex:*) ;;
         *:needs-input|*:done)
           tmp_file="$(mktemp "$state_dir/.pane-state.XXXXXX")"
           sed 's/"status":"[^"]*"/"status":"idle"/' "$state_file" > "$tmp_file"

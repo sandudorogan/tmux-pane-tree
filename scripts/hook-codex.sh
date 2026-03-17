@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+printf '[%s] args=%s stdin=%s\n' "$(date +%H:%M:%S)" "${1:-}${2:+ $2}" "$([ -t 0 ] && echo no || echo yes)" >> /tmp/codex-hook-debug.log
+
 SCRIPT_DIR="$(CDPATH= cd -- "$(dirname "$0")" && pwd)"
 update_helper="${TMUX_SIDEBAR_UPDATE_HELPER:-$SCRIPT_DIR/update-pane-state.sh}"
 forward_notify="${TMUX_SIDEBAR_CODEX_NOTIFY_FORWARD:-${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/peon-ping/adapters/codex.sh}"
@@ -101,8 +103,8 @@ idle_statuses = {
     "waiting",
 }
 
-if notif_type == "idle_prompt" or raw_event == "idle-prompt" or status_hint in idle_statuses:
-    status = "idle"
+if raw_event in done_events or status_hint in done_statuses:
+    status = "done"
 elif (
     raw_event.startswith("permission")
     or raw_event.startswith("approve")
@@ -112,20 +114,12 @@ elif (
     status = "needs-input"
 elif raw_event.startswith("error") or raw_event.startswith("fail"):
     status = "error"
-elif raw_event == "session-start":
+elif notif_type == "idle_prompt" or raw_event == "idle-prompt":
     status = "idle"
-elif raw_event == "start":
-    status = "running"
 elif status_hint == "running":
     status = "running"
-elif raw_event in done_events or status_hint in done_statuses:
-    status = "done"
-elif not raw_event and not status_hint and not notif_type and not message:
-    status = "idle"
-elif message_hint in ("ready", "idle", "waiting"):
-    status = "idle"
 else:
-    status = "running"
+    status = ""
 
 print(status)
 print(message)
@@ -134,6 +128,10 @@ PY
 
 status="$(printf '%s\n' "$parsed" | sed -n '1p')"
 message="$(printf '%s\n' "$parsed" | sed -n '2p')"
+
+printf '  -> status=%s pane=%s\n' "$status" "${TMUX_PANE:-}" >> /tmp/codex-hook-debug.log
+
+[ -n "$status" ] || exit 0
 
 exec "$update_helper" \
   --pane "${TMUX_PANE:-}" \
