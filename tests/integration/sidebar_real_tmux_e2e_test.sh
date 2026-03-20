@@ -50,21 +50,26 @@ assert_contains "$build_capture" 'ops'
 
 real_tmux select-pane -t "$sidebar_pane_id"
 client_log="$TEST_TMP/client.log"
-real_tmux_attach_session_client_info work "$client_log"
+real_tmux_attach_control_client_info work "$client_log"
 client_pid="$REAL_TMUX_CLIENT_PID"
-client_tty="$REAL_TMUX_CLIENT_TTY"
-attached_client_tty="$(real_tmux_wait_for_client_tty)"
-assert_eq "$attached_client_tty" "$client_tty"
-python3 - <<PY
-from pathlib import Path
-Path("$client_tty").write_bytes(b"m")
-PY
-sleep 0.3
-python3 - <<PY
-from pathlib import Path
-Path("$client_tty").write_bytes(b"q")
-PY
-sleep 0.5
+client_name="$REAL_TMUX_CLIENT_NAME"
+attached_client_name="$(real_tmux_wait_for_client_name)"
+assert_eq "$attached_client_name" "$client_name"
+menu_file="$REAL_TMUX_STATE_DIR/menu-cmd.tmux"
+rm -f "$menu_file"
+TMUX_SIDEBAR_STATE_DIR="$REAL_TMUX_STATE_DIR" \
+  bash "$REPO_ROOT/scripts/features/context-menu/show-context-menu.sh" \
+    "$sidebar_pane_id" 0 10 0 "$client_name"
+menu_command=""
+for _attempt in $(seq 1 100); do
+  if [ -f "$menu_file" ]; then
+    menu_command="$(<"$menu_file")"
+    break
+  fi
+  sleep 0.05
+done
+[ -n "$menu_command" ] || fail "expected menu command in [$menu_file]"
+assert_contains "$menu_command" "display-menu -c $client_name"
 
 sidebar_after_menu="$(
   real_tmux list-panes -t "$main_window_id" -F '#{pane_id}|#{pane_title}' \

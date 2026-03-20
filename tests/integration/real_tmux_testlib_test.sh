@@ -14,15 +14,15 @@ session_name="$(real_tmux display-message -p -t work:editor '#{session_name}')"
 assert_eq "$session_name" 'work'
 
 client_log="$TEST_TMP/client.log"
-real_tmux_attach_session_client_info work "$client_log"
+real_tmux_attach_control_client_info work "$client_log"
 client_pid="$REAL_TMUX_CLIENT_PID"
-client_tty="$REAL_TMUX_CLIENT_TTY"
+client_name="$REAL_TMUX_CLIENT_NAME"
 [ -n "$client_pid" ] || fail 'expected attached client pid'
-case "$client_tty" in
-  /dev/*) ;;
-  *) fail "expected attached client tty, got [$client_tty]" ;;
+case "$client_name" in
+  client-*) ;;
+  *) fail "expected attached client name, got [$client_name]" ;;
 esac
 
-attached_client_tty="$(real_tmux_wait_for_client_tty)"
-assert_eq "$attached_client_tty" "$client_tty"
+attached_client_name="$(real_tmux_wait_for_client_name)"
+assert_eq "$attached_client_name" "$client_name"
 kill "$client_pid" 2>/dev/null || true

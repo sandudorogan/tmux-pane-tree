@@ -67,7 +67,7 @@ def _run_context_menu(mouse_y: int) -> None:
         menu_x = str(int(pane_left_raw) + max(0, int(pane_width_raw) - 1))
         menu_y = str(int(pane_top_raw) + max(0, mouse_y))
         target_client = subprocess.check_output(
-            ["tmux", "list-clients", "-t", session_name, "-F", "#{client_tty}"],
+            ["tmux", "list-clients", "-t", session_name, "-F", "#{client_name}"],
             text=True,
             stderr=subprocess.DEVNULL,
         ).splitlines()[0].strip()

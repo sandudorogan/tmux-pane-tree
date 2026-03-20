@@ -7,7 +7,7 @@ REAL_TMUX_SOCKET_PATH="$TEST_TMP/$REAL_TMUX_SOCKET.sock"
 REAL_TMUX_STATE_DIR="$TEST_TMP/state"
 REPO_ROOT="$(CDPATH= cd -- "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REAL_TMUX_CLIENT_PID=""
-REAL_TMUX_CLIENT_TTY=""
+REAL_TMUX_CLIENT_NAME=""
 
 trap 'tmux -S "$REAL_TMUX_SOCKET_PATH" kill-server 2>/dev/null || true; rm -rf "$TEST_TMP"' EXIT
 
@@ -43,49 +43,25 @@ real_tmux_shell_command() {
   printf '%s\n' "${shell_command% }"
 }
 
-real_tmux_attach_session_client_info() {
+real_tmux_attach_control_client_info() {
   local session_name="$1"
   local log_file="$2"
-  local token="$$.$RANDOM"
-  local info_file="$TEST_TMP/client-info.$token"
   local attempts=100
-  local client_tty=""
+  local client_name=""
   local _attempt
 
-  python3 - "$REAL_TMUX_SOCKET_PATH" "$session_name" "$log_file" "$info_file" <<'PY' &
+  python3 - "$REAL_TMUX_SOCKET_PATH" "$session_name" "$log_file" <<'PY' &
 from __future__ import annotations
 
-import os
-import pty
 import signal
 import subprocess
 import sys
 import time
-import fcntl
-import termios
-from pathlib import Path
 
-socket_path, session_name, log_file, info_file = sys.argv[1:5]
+socket_path, session_name, log_file = sys.argv[1:4]
 
 stop = False
 child: subprocess.Popen[bytes] | None = None
-master_fd = -1
-
-
-def make_controlling_tty(slave_fd: int) -> None:
-    os.setsid()
-    try:
-        os.login_tty(slave_fd)
-        return
-    except AttributeError:
-        pass
-
-    fcntl.ioctl(slave_fd, termios.TIOCSCTTY, 0)
-    os.dup2(slave_fd, 0)
-    os.dup2(slave_fd, 1)
-    os.dup2(slave_fd, 2)
-    if slave_fd > 2:
-        os.close(slave_fd)
 
 
 def handle_signal(signum: int, frame: object) -> None:
@@ -98,35 +74,16 @@ def handle_signal(signum: int, frame: object) -> None:
 signal.signal(signal.SIGTERM, handle_signal)
 signal.signal(signal.SIGINT, handle_signal)
 
-master_fd, slave_fd = pty.openpty()
-slave_tty = os.ttyname(slave_fd)
-os.set_blocking(master_fd, False)
-
 with open(log_file, "ab", buffering=0) as log_handle:
     child = subprocess.Popen(
-        ["tmux", "-S", socket_path, "-f", "/dev/null", "attach-session", "-t", session_name],
-        stdin=slave_fd,
-        stdout=slave_fd,
-        stderr=slave_fd,
-        preexec_fn=lambda: make_controlling_tty(slave_fd),
-        close_fds=True,
+        ["tmux", "-S", socket_path, "-f", "/dev/null", "-C", "attach-session", "-t", session_name],
+        stdin=subprocess.PIPE,
+        stdout=log_handle,
+        stderr=log_handle,
     )
-    os.close(slave_fd)
-    Path(info_file).write_text(slave_tty)
 
     try:
         while True:
-            if stop and child.poll() is not None:
-                break
-            try:
-                data = os.read(master_fd, 4096)
-            except BlockingIOError:
-                data = b""
-            except OSError:
-                data = b""
-            if data:
-                log_handle.write(data)
-                continue
             if child.poll() is not None:
                 break
             time.sleep(0.05)
@@ -138,17 +95,17 @@ with open(log_file, "ab", buffering=0) as log_handle:
             except subprocess.TimeoutExpired:
                 child.kill()
                 child.wait()
-        if master_fd >= 0:
-            os.close(master_fd)
 PY
   local wrapper_pid="$!"
 
   for _attempt in $(seq 1 "$attempts"); do
-    if [ -f "$info_file" ]; then
-      client_tty="$(<"$info_file")"
-      rm -f "$info_file"
+    client_name="$(
+      real_tmux list-clients -F '#{client_name}|#{client_flags}' 2>/dev/null \
+        | awk -F'|' '$2 ~ /control-mode/ { print $1; exit }'
+    )"
+    if [ -n "$client_name" ]; then
       REAL_TMUX_CLIENT_PID="$wrapper_pid"
-      REAL_TMUX_CLIENT_TTY="$client_tty"
+      REAL_TMUX_CLIENT_NAME="$client_name"
       return 0
     fi
     if ! kill -0 "$wrapper_pid" 2>/dev/null; then
@@ -157,12 +114,11 @@ PY
     sleep 0.05
   done
 
-  rm -f "$info_file"
-  fail "tmux client helper did not report tty for session [$session_name]"
+  fail "tmux control client did not attach for session [$session_name]"
 }
 
-real_tmux_attach_session_client() {
-  real_tmux_attach_session_client_info "$@"
+real_tmux_attach_control_client() {
+  real_tmux_attach_control_client_info "$@"
   printf '%s\n' "$REAL_TMUX_CLIENT_PID"
 }
 
@@ -269,21 +225,21 @@ real_tmux_wait_for_capture() {
   fail "pane [$pane_id] never rendered [$expected]"
 }
 
-real_tmux_wait_for_client_tty() {
+real_tmux_wait_for_client_name() {
   local attempts="${1:-100}"
-  local client_tty=""
+  local client_name=""
   local client_snapshot=""
   local _attempt
 
   for _attempt in $(seq 1 "$attempts"); do
-    client_tty="$(real_tmux list-clients -F '#{client_tty}' 2>/dev/null | sed -n '1p')"
-    if [ -n "$client_tty" ]; then
-      printf '%s\n' "$client_tty"
+    client_name="$(real_tmux list-clients -F '#{client_name}' 2>/dev/null | sed -n '1p')"
+    if [ -n "$client_name" ]; then
+      printf '%s\n' "$client_name"
       return 0
     fi
     sleep 0.05
   done
 
-  client_snapshot="$(real_tmux list-clients -F '#{client_name}|#{client_tty}' 2>&1 || true)"
+  client_snapshot="$(real_tmux list-clients -F '#{client_name}|#{client_flags}' 2>&1 || true)"
   fail "tmux client did not attach; clients: [$client_snapshot]"
 }
