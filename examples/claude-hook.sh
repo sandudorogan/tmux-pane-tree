@@ -36,7 +36,7 @@ case "$EVENT_NAME" in
     ;;
 esac
 
-exec "$PLUGIN_DIR/scripts/update-pane-state.sh" \
+exec "$PLUGIN_DIR/scripts/features/state/update-pane-state.sh" \
   --pane "${TMUX_PANE:-}" \
   --app claude \
   --status "$status" \

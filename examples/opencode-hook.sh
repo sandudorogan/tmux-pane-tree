@@ -36,7 +36,7 @@ if [ -z "$status" ]; then
   esac
 fi
 
-exec "$PLUGIN_DIR/scripts/update-pane-state.sh" \
+exec "$PLUGIN_DIR/scripts/features/state/update-pane-state.sh" \
   --pane "${TMUX_PANE:-}" \
   --app opencode \
   --status "$status" \

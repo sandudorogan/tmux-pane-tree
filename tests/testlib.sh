@@ -120,6 +120,8 @@ fake_tmux_no_sidebar() {
   rm -f "$TEST_TMUX_DATA_DIR"/option_*.txt
   rm -f "$TEST_TMUX_DATA_DIR"/window_layout_*.txt
   rm -f "$TEST_TMUX_DATA_DIR/next_sidebar_pane_id.txt"
+  rm -f "$TEST_TMUX_DATA_DIR/fail_allow_set_title.txt"
+  rm -f "$TEST_TMUX_DATA_DIR/split_window_pane_title.txt"
 }
 
 fake_tmux_sidebar_count() {
@@ -344,6 +346,7 @@ case "$command_name" in
   split-window)
     printf 'split-window %s\n' "$*" >> "$data_dir/commands.log"
     target_pane="$(cat "$data_dir/current_pane.txt")"
+    new_pane_title="Sidebar"
     while [ "$#" -gt 0 ]; do
       case "$1" in
         -t)
@@ -369,14 +372,17 @@ case "$command_name" in
     else
       next_pane_id="99"
     fi
+    if [ -f "$data_dir/split_window_pane_title.txt" ]; then
+      new_pane_title="$(cat "$data_dir/split_window_pane_title.txt")"
+    fi
     cat > "$data_dir/pane_${next_pane_id}.meta" <<METAEOF
 session_name=$session_name
 window_id=$window_id
 window_name=$window_name
-pane_title=Sidebar
+pane_title=$new_pane_title
 pane_current_command=python3
 METAEOF
-    printf '%%%s|Sidebar|%s\n' "$next_pane_id" "$window_id" >> "$data_dir/toggle_panes.txt"
+    printf '%%%s|%s|%s\n' "$next_pane_id" "$new_pane_title" "$window_id" >> "$data_dir/toggle_panes.txt"
     printf '%%%s\n' "$next_pane_id"
     printf '%s\n' "$((next_pane_id - 1))" > "$next_pane_id_file"
     ;;
@@ -485,6 +491,10 @@ PY
       esac
     done
     option_file="$data_dir/option_${option_name//@/_}.txt"
+    if [ "$scope" = "-p" ] && [ "$option_name" = "allow-set-title" ] && [ -f "$data_dir/fail_allow_set_title.txt" ]; then
+      printf 'invalid option: %s\n' "$option_name" >&2
+      exit 1
+    fi
     if [ "$unset_flag" = "1" ]; then
       rm -f "$option_file"
     else

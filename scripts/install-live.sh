@@ -12,7 +12,8 @@ mkdir -p "$(dirname "$PLUGIN_DST")"
 rm -rf "$PLUGIN_DST"
 mkdir -p "$PLUGIN_DST"
 cp -R "$PLUGIN_SRC"/. "$PLUGIN_DST"/
-chmod +x "$PLUGIN_DST"/sidebar.tmux "$PLUGIN_DST"/scripts/*.sh "$PLUGIN_DST"/examples/*.sh
+chmod +x "$PLUGIN_DST"/sidebar.tmux "$PLUGIN_DST"/examples/*.sh
+find "$PLUGIN_DST/scripts" -type f -name '*.sh' -exec chmod +x {} +
 
 cp "$TMUX_CONF" "$TMUX_CONF.bak-tmux-sidebar-$TIMESTAMP"
 python3 - <<'PY'
@@ -20,7 +21,7 @@ from pathlib import Path
 
 path = Path.home() / ".config/tmux/tmux.conf"
 old_line = 'if-shell "test -f ~/.config/tmux/plugins/tmux-sidebar/sidebar.tmux" "source-file ~/.config/tmux/plugins/tmux-sidebar/sidebar.tmux"'
-line = "run-shell '~/.config/tmux/plugins/tmux-sidebar/sidebar.tmux'"
+line = "source-file ~/.config/tmux/plugins/tmux-sidebar/sidebar.tmux"
 text = path.read_text()
 text = text.replace(old_line + "\n", "")
 text = text.replace("\n" + old_line, "")
@@ -42,7 +43,7 @@ from pathlib import Path
 path = Path.home() / ".claude/settings.json"
 data = json.loads(path.read_text())
 hooks = data.setdefault("hooks", {})
-command = str(Path.home() / ".config/tmux/plugins/tmux-sidebar/scripts/hook-claude.sh")
+command = str(Path.home() / ".config/tmux/plugins/tmux-sidebar/scripts/features/hooks/hook-claude.sh")
 
 def ensure_event(event_name: str, async_enabled: bool) -> None:
     rules = hooks.setdefault(event_name, [])
@@ -89,7 +90,7 @@ import re
 
 path = Path.home() / ".codex/config.toml"
 text = path.read_text()
-line = f'notify = ["bash", "{Path.home() / ".config/tmux/plugins/tmux-sidebar/scripts/hook-codex.sh"}"]'
+line = f'notify = ["bash", "{Path.home() / ".config/tmux/plugins/tmux-sidebar/scripts/features/hooks/hook-codex.sh"}"]'
 if re.search(r"^notify\s*=\s*\[.*\]$", text, flags=re.M):
     text = re.sub(r"^notify\s*=\s*\[.*\]$", line, text, count=1, flags=re.M)
 else:
@@ -105,5 +106,5 @@ if [ -n "${TMUX:-}" ]; then
         tmux set-hook -gu "$hook_name" || true
       done
   tmux source-file "$TMUX_CONF" || true
-  bash "$PLUGIN_DST/scripts/reload-sidebar-panes.sh" || true
+  bash "$PLUGIN_DST/scripts/features/sidebar/reload-sidebar-panes.sh" || true
 fi
