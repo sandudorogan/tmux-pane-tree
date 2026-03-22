@@ -15,5 +15,6 @@ set-hook -g "after-new-window[207]" "run-shell -b '#{@tmux_sidebar_dir}/scripts/
 set-hook -g "after-kill-pane[208]" "run-shell -b '#{@tmux_sidebar_dir}/scripts/features/sidebar/handle-pane-exited.sh #{hook_pane} #{hook_window}'"
 set-hook -g "after-resize-pane[209]" "run-shell -b '#{@tmux_sidebar_dir}/scripts/features/sidebar/notify-sidebar.sh'"
 set-hook -g "after-rename-window[210]" "run-shell -b '#{@tmux_sidebar_dir}/scripts/features/sidebar/notify-sidebar.sh'"
+set-hook -g "after-rename-session[211]" "run-shell -b '#{@tmux_sidebar_dir}/scripts/features/sidebar/notify-sidebar.sh'"
 run-shell -b "#{@tmux_sidebar_dir}/scripts/features/sidebar/apply-key-overrides.sh"
 run-shell -b "bash #{@tmux_sidebar_dir}/scripts/features/context-menu/bind-context-menu.sh"
