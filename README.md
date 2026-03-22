@@ -47,8 +47,8 @@ Badges for `done` and `needs-input` clear automatically when you focus the pane.
 **Auto-mirroring** — the sidebar follows you across windows. Open it once and it
 stays visible as you move around.
 
-**Session management** — add windows, add sessions, and close panes directly
-from the sidebar without leaving context.
+**Session management** — add windows, add sessions, rename sessions, rename
+windows, and close panes directly from the sidebar without leaving context.
 
 ## Install
 
@@ -98,6 +98,8 @@ Then `tmux source-file ~/.tmux.conf`.
 | `Enter`      | Jump to the selected pane        |
 | `aw`         | Add a window (prompts for name)  |
 | `as`         | Add a session (prompts for name) |
+| `rw`         | Rename the selected window       |
+| `rs`         | Rename the selected session      |
 | `x`          | Close the selected pane          |
 | `p`          | Toggle hide-panes mode           |
 | `q`          | Close the sidebar                |
@@ -138,7 +140,7 @@ set -g @tmux_sidebar_session_order "work,ops,scratch"
 
 Sessions not in this list appear after the listed ones in their default order.
 Adding a session via the sidebar (`as`) automatically inserts it into this
-list.
+list, and renaming a session via `rs` updates the existing entry in place.
 
 ### Custom shortcuts
 
@@ -147,11 +149,13 @@ Override the default sidebar shortcuts:
 ```tmux
 set -g @tmux_sidebar_add_window_shortcut  zw   # default: aw
 set -g @tmux_sidebar_add_session_shortcut zs   # default: as
+set -g @tmux_sidebar_rename_window_shortcut rw # default: rw
+set -g @tmux_sidebar_rename_session_shortcut rs # default: rs
 set -g @tmux_sidebar_close_pane_shortcut  dd   # default: x
 ```
 
 Shortcuts are validated on load. If any value is empty, duplicates another,
-overlaps as a prefix, or contains the reserved `q` key, all three revert to
+overlaps as a prefix, or contains the reserved `q` key, all five revert to
 defaults.
 
 ### Scroll offset
@@ -219,6 +223,8 @@ set -g @tmux_sidebar_focus_key   B    # default: T
 | `@tmux_sidebar_session_order`        |    —    | Comma-separated session ordering |
 | `@tmux_sidebar_add_window_shortcut`  |  `aw`   | Shortcut to add a window         |
 | `@tmux_sidebar_add_session_shortcut` |  `as`   | Shortcut to add a session        |
+| `@tmux_sidebar_rename_window_shortcut` | `rw` | Shortcut to rename a window      |
+| `@tmux_sidebar_rename_session_shortcut` | `rs` | Shortcut to rename a session     |
 | `@tmux_sidebar_close_pane_shortcut`  |   `x`   | Shortcut to close selected pane  |
 | `@tmux_sidebar_hide_panes`           |  `off`  | Show only sessions and windows   |
 | `@tmux_sidebar_scrolloff`            |   `8`   | Cursor scroll margin (like vim)  |
