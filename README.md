@@ -111,6 +111,7 @@ bash ~/.tmux/plugins/tmux-sidebar/scripts/features/hooks/install-agent-hooks.sh
 | `as`         | Add a session (prompts for name) |
 | `rw`         | Rename the selected window       |
 | `rs`         | Rename the selected session      |
+| `f`          | Toggle pane filter mode          |
 | `x`          | Close the selected pane          |
 | `p`          | Toggle hide-panes mode           |
 | `q`          | Close the sidebar                |
@@ -157,6 +158,21 @@ Sessions not in this list appear after the listed ones in their default order.
 Adding a session via the sidebar (`as`) automatically inserts it into this
 list, and renaming a session via `rs` updates the existing entry in place.
 
+### Pane filter
+
+Show only panes that match a comma-separated list of process or agent tokens:
+
+```tmux
+set -g @tmux_sidebar_filter "opencode,codex,claude"
+```
+
+Matching is case-insensitive and checks pane command, pane title, and stored
+agent app metadata from tmux-sidebar hooks.
+
+When a filter is configured, press `f` inside the sidebar to toggle filter mode
+on and off without changing the filter list. The runtime toggle is stored in
+`@tmux_sidebar_filter_enabled` and defaults to on.
+
 ### Custom shortcuts
 
 Override the default sidebar shortcuts:
@@ -170,13 +186,14 @@ set -g @tmux_sidebar_jump_back_shortcut   C-p  # default: C-o
 set -g @tmux_sidebar_jump_forward_shortcut C-n # default: C-i
 set -g @tmux_sidebar_rename_window_shortcut rw # default: rw
 set -g @tmux_sidebar_rename_session_shortcut rs # default: rs
+set -g @tmux_sidebar_toggle_filter_shortcut ff # default: f
 set -g @tmux_sidebar_close_pane_shortcut  dd   # default: x
 ```
 
 Control-key shortcuts use `C-x` notation.
 
 Shortcuts are validated on load. If any value is empty, duplicates another,
-overlaps as a prefix, or contains the reserved `q` key, all nine revert to
+overlaps as a prefix, or contains the reserved `q` key, all ten revert to
 defaults.
 
 ### Scroll offset
@@ -253,6 +270,7 @@ installs an OpenCode plugin under `~/.config/opencode/plugins/`.
 | `@tmux_sidebar_width`                |  `25`   | Sidebar column width             |
 | `@tmux_sidebar_focus_on_open`        |   `1`   | Focus sidebar when toggled open  |
 | `@tmux_sidebar_session_order`        |    —    | Comma-separated session ordering |
+| `@tmux_sidebar_filter`               |    —    | Comma-separated pane filter      |
 | `@tmux_sidebar_add_window_shortcut`  |  `aw`   | Shortcut to add a window         |
 | `@tmux_sidebar_add_session_shortcut` |  `as`   | Shortcut to add a session        |
 | `@tmux_sidebar_go_top_shortcut`      |  `gg`   | Shortcut to jump to the top      |
@@ -261,6 +279,7 @@ installs an OpenCode plugin under `~/.config/opencode/plugins/`.
 | `@tmux_sidebar_jump_forward_shortcut` | `C-i` | Shortcut to jump forward         |
 | `@tmux_sidebar_rename_window_shortcut` | `rw` | Shortcut to rename a window      |
 | `@tmux_sidebar_rename_session_shortcut` | `rs` | Shortcut to rename a session     |
+| `@tmux_sidebar_toggle_filter_shortcut` | `f` | Shortcut to toggle filter mode   |
 | `@tmux_sidebar_close_pane_shortcut`  |   `x`   | Shortcut to close selected pane  |
 | `@tmux_sidebar_hide_panes`           |  `off`  | Show only sessions and windows   |
 | `@tmux_sidebar_scrolloff`            |   `8`   | Cursor scroll margin (like vim)  |
@@ -317,13 +336,96 @@ Add hook entries under `hooks.<EventName>` in `~/.claude/settings.json`:
 ```json
 {
   "hooks": {
-    "SessionStart": [{ "matcher": "", "hooks": [{ "type": "command", "command": "~/.tmux/plugins/tmux-sidebar/scripts/features/hooks/hook-claude.sh", "timeout": 10 }] }],
-    "UserPromptSubmit": [{ "matcher": "", "hooks": [{ "type": "command", "command": "~/.tmux/plugins/tmux-sidebar/scripts/features/hooks/hook-claude.sh", "timeout": 10, "async": true }] }],
-    "Stop": [{ "matcher": "", "hooks": [{ "type": "command", "command": "~/.tmux/plugins/tmux-sidebar/scripts/features/hooks/hook-claude.sh", "timeout": 10, "async": true }] }],
-    "Notification": [{ "matcher": "", "hooks": [{ "type": "command", "command": "~/.tmux/plugins/tmux-sidebar/scripts/features/hooks/hook-claude.sh", "timeout": 10, "async": true }] }],
-    "PermissionRequest": [{ "matcher": "", "hooks": [{ "type": "command", "command": "~/.tmux/plugins/tmux-sidebar/scripts/features/hooks/hook-claude.sh", "timeout": 10, "async": true }] }],
-    "SessionEnd": [{ "matcher": "", "hooks": [{ "type": "command", "command": "~/.tmux/plugins/tmux-sidebar/scripts/features/hooks/hook-claude.sh", "timeout": 10, "async": true }] }],
-    "SubagentStart": [{ "matcher": "", "hooks": [{ "type": "command", "command": "~/.tmux/plugins/tmux-sidebar/scripts/features/hooks/hook-claude.sh", "timeout": 10, "async": true }] }]
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.tmux/plugins/tmux-sidebar/scripts/features/hooks/hook-claude.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.tmux/plugins/tmux-sidebar/scripts/features/hooks/hook-claude.sh",
+            "timeout": 10,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.tmux/plugins/tmux-sidebar/scripts/features/hooks/hook-claude.sh",
+            "timeout": 10,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.tmux/plugins/tmux-sidebar/scripts/features/hooks/hook-claude.sh",
+            "timeout": 10,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.tmux/plugins/tmux-sidebar/scripts/features/hooks/hook-claude.sh",
+            "timeout": 10,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.tmux/plugins/tmux-sidebar/scripts/features/hooks/hook-claude.sh",
+            "timeout": 10,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.tmux/plugins/tmux-sidebar/scripts/features/hooks/hook-claude.sh",
+            "timeout": 10,
+            "async": true
+          }
+        ]
+      }
+    ]
   }
 }
 ```
