@@ -56,6 +56,7 @@ windows, and close panes directly from the sidebar without leaving context.
 
 ```tmux
 set -g @plugin 'sandudorogan/tmux-sidebar'
+set -g @tmux_sidebar_install_agent_hooks 1   # optional: patch agent configs on load
 ```
 
 Reload tmux and press `prefix + I` to install.
@@ -74,6 +75,12 @@ source-file ~/.tmux/plugins/tmux-sidebar/sidebar.tmux
 ```
 
 Then `tmux source-file ~/.tmux.conf`.
+
+To patch Claude Code, Codex, and OpenCode hook config after a manual install:
+
+```bash
+bash ~/.tmux/plugins/tmux-sidebar/scripts/features/hooks/install-agent-hooks.sh
+```
 
 ## Usage
 
@@ -228,6 +235,17 @@ set -g @tmux_sidebar_toggle_key  b    # default: t
 set -g @tmux_sidebar_focus_key   B    # default: T
 ```
 
+### Agent hook install
+
+Opt into automatic agent-hook setup during plugin load:
+
+```tmux
+set -g @tmux_sidebar_install_agent_hooks 1   # default: 0
+```
+
+When enabled, tmux-sidebar patches Claude Code and Codex config files and
+installs an OpenCode plugin under `~/.config/opencode/plugins/`.
+
 ### Quick reference
 
 | Option                               | Default | Description                      |
@@ -255,6 +273,7 @@ set -g @tmux_sidebar_focus_key   B    # default: T
 | `@tmux_sidebar_color_pane`           |    —    | Pane name color (hex)            |
 | `@tmux_sidebar_toggle_key`           |   `t`   | Tmux key to toggle sidebar       |
 | `@tmux_sidebar_focus_key`            |   `T`   | Tmux key to focus sidebar        |
+| `@tmux_sidebar_install_agent_hooks`  |   `0`   | Patch agent hook config on load  |
 
 | Environment variable     | Description                                                                                    |
 | ------------------------ | ---------------------------------------------------------------------------------------------- |
@@ -274,6 +293,59 @@ Agents report their status through `scripts/features/state/update-pane-state.sh`
 ```
 
 Supported `--status` values: `running`, `needs-input`, `done`, `error`, `idle`.
+
+### Automatic setup
+
+Two built-in install paths can wire the agent hooks for you:
+
+- Set `@tmux_sidebar_install_agent_hooks` to `1` before loading the plugin with
+  TPM or a manual `source-file`.
+- Run `bash scripts/install-live.sh` during development; it installs the working
+  tree and patches the agent config files as part of the live-reload flow.
+
+### Manual setup
+
+If you prefer to edit the agent config yourself, use the installed plugin path
+in the snippets below. With TPM that is usually
+`~/.tmux/plugins/tmux-sidebar`; after `install-live.sh` it is usually
+`~/.config/tmux/plugins/tmux-sidebar`.
+
+#### Claude Code
+
+Add hook entries under `hooks.<EventName>` in `~/.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "SessionStart": [{ "matcher": "", "hooks": [{ "type": "command", "command": "~/.tmux/plugins/tmux-sidebar/scripts/features/hooks/hook-claude.sh", "timeout": 10 }] }],
+    "UserPromptSubmit": [{ "matcher": "", "hooks": [{ "type": "command", "command": "~/.tmux/plugins/tmux-sidebar/scripts/features/hooks/hook-claude.sh", "timeout": 10, "async": true }] }],
+    "Stop": [{ "matcher": "", "hooks": [{ "type": "command", "command": "~/.tmux/plugins/tmux-sidebar/scripts/features/hooks/hook-claude.sh", "timeout": 10, "async": true }] }],
+    "Notification": [{ "matcher": "", "hooks": [{ "type": "command", "command": "~/.tmux/plugins/tmux-sidebar/scripts/features/hooks/hook-claude.sh", "timeout": 10, "async": true }] }],
+    "PermissionRequest": [{ "matcher": "", "hooks": [{ "type": "command", "command": "~/.tmux/plugins/tmux-sidebar/scripts/features/hooks/hook-claude.sh", "timeout": 10, "async": true }] }],
+    "SessionEnd": [{ "matcher": "", "hooks": [{ "type": "command", "command": "~/.tmux/plugins/tmux-sidebar/scripts/features/hooks/hook-claude.sh", "timeout": 10, "async": true }] }],
+    "SubagentStart": [{ "matcher": "", "hooks": [{ "type": "command", "command": "~/.tmux/plugins/tmux-sidebar/scripts/features/hooks/hook-claude.sh", "timeout": 10, "async": true }] }]
+  }
+}
+```
+
+#### Codex
+
+Set `notify` in `~/.codex/config.toml`:
+
+```toml
+notify = ["bash", "~/.tmux/plugins/tmux-sidebar/scripts/features/hooks/hook-codex.sh"]
+```
+
+#### OpenCode
+
+OpenCode auto-loads JavaScript or TypeScript plugins from
+`~/.config/opencode/plugins/`. The helper script creates
+`~/.config/opencode/plugins/tmux-sidebar.js`, which forwards OpenCode events to
+the tmux-sidebar hook wrapper:
+
+```bash
+bash ~/.tmux/plugins/tmux-sidebar/scripts/features/hooks/install-agent-hooks.sh
+```
 
 ### Agent hook examples
 
@@ -318,7 +390,7 @@ scripts/
       render.py            <- curses colors, drawing, row-map/context-menu IPC
   features/
     sidebar/               <- pane lifecycle, focus, rendering, reload helpers
-    hooks/                 <- Claude/Codex hook wrappers
+    hooks/                 <- agent hook wrappers and config installer
     state/                 <- pane-state file writers/cleanup
     context-menu/          <- right-click menu integration
     sessions/              <- prompted window/session creation helpers
@@ -348,7 +420,7 @@ This copies the working tree into `~/.config/tmux/plugins/tmux-sidebar`,
 patches `#{d:current_file}` references, re-sources the tmux config, and
 respawns every open sidebar pane. It also keeps agent hooks in
 `~/.claude/settings.json` and `~/.codex/config.toml` pointing at the installed
-copy.
+copy, and installs the OpenCode plugin in `~/.config/opencode/plugins/`.
 
 If you only changed `scripts/ui/sidebar-ui.py` and want to skip the full install, you can
 respawn the sidebar panes directly:

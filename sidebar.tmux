@@ -1,5 +1,6 @@
 set -gF @tmux_sidebar_dir "#{d:current_file}"
 
+if-shell -F '#{==:#{@tmux_sidebar_install_agent_hooks},1}' "run-shell -b '#{@tmux_sidebar_dir}/scripts/features/hooks/install-agent-hooks.sh'"
 run-shell -b "#{@tmux_sidebar_dir}/scripts/features/sidebar/configure-pane-border-format.sh"
 bind-key t run-shell -b "#{@tmux_sidebar_dir}/scripts/features/sidebar/toggle-sidebar.sh"
 bind-key T run-shell -b "#{@tmux_sidebar_dir}/scripts/features/sidebar/focus-sidebar.sh"

@@ -10,6 +10,7 @@ NORMALIZED_PLUGIN_DST="$(python3 -c 'from pathlib import Path; import sys; print
 TMUX_CONF="$HOME_DIR/.config/tmux/tmux.conf"
 CLAUDE_SETTINGS="$HOME_DIR/.claude/settings.json"
 CODEX_CONFIG="$HOME_DIR/.codex/config.toml"
+OPENCODE_PLUGIN="$HOME_DIR/.config/opencode/plugins/tmux-sidebar.js"
 
 mkdir -p "$(dirname "$TMUX_CONF")" "$(dirname "$CLAUDE_SETTINGS")" "$(dirname "$CODEX_CONFIG")"
 
@@ -42,3 +43,4 @@ assert_file_not_contains "$TMUX_CONF" "run-shell '$NORMALIZED_PLUGIN_DST/sidebar
 assert_file_not_contains "$TMUX_CONF" "run-shell '~/.config/tmux/plugins/tmux-sidebar/sidebar.tmux'"
 assert_file_contains "$CLAUDE_SETTINGS" 'scripts/features/hooks/hook-claude.sh'
 assert_file_contains "$CODEX_CONFIG" 'scripts/features/hooks/hook-codex.sh'
+assert_file_contains "$OPENCODE_PLUGIN" 'examples/opencode-hook.sh'
