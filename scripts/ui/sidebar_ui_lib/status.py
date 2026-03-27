@@ -162,10 +162,12 @@ BADGE_OPTIONS: dict[str, str] = {
     "error": "@tmux_sidebar_badge_error",
 }
 ICON_THEME_OPTION = "@tmux_sidebar_icon_theme"
-GHOSTTY_CONFIG_ENV = "TMUX_SIDEBAR_GHOSTTY_CONFIG"
+FONT_DIRS_ENV = "TMUX_SIDEBAR_FONT_DIRS"
+FONT_FILE_SUFFIXES = {".otf", ".otc", ".ttc", ".ttf"}
 
 _badge_cache: dict[str, str] | None = None
 _icon_cache: dict[str, str] | None = None
+_nerd_font_installed_cache: bool | None = None
 
 
 def configured_badges() -> dict[str, str]:
@@ -185,34 +187,49 @@ def badge_for_status(status: str) -> str:
     return configured_badges().get(status, "")
 
 
-def ghostty_config_paths() -> tuple[Path, ...]:
-    override = os.environ.get(GHOSTTY_CONFIG_ENV)
+def font_search_paths() -> tuple[Path, ...]:
+    override = os.environ.get(FONT_DIRS_ENV)
     if override is not None:
-        return (Path(override),)
-    xdg_config_home = Path(os.environ.get("XDG_CONFIG_HOME", str(Path.home() / ".config")))
+        return tuple(Path(path).expanduser() for path in override.split(os.pathsep) if path)
+    home = Path.home()
+    xdg_data_home = Path(os.environ.get("XDG_DATA_HOME", str(home / ".local" / "share")))
     return (
-        xdg_config_home / "ghostty" / "config",
-        Path.home() / ".config" / "ghostty" / "config",
+        home / "Library" / "Fonts",
+        Path("/Library/Fonts"),
+        Path("/System/Library/Fonts"),
+        xdg_data_home / "fonts",
+        home / ".fonts",
+        Path("/usr/local/share/fonts"),
+        Path("/usr/share/fonts"),
     )
 
 
-def ghostty_uses_nerd_font() -> bool:
-    for config_path in ghostty_config_paths():
+def is_nerd_font_file(path: Path) -> bool:
+    return path.suffix.lower() in FONT_FILE_SUFFIXES and bool(re.search(r"nerd\s*font", path.name, re.IGNORECASE))
+
+
+def nerd_font_installed() -> bool:
+    global _nerd_font_installed_cache
+    if _nerd_font_installed_cache is not None:
+        return _nerd_font_installed_cache
+    for root in font_search_paths():
         try:
-            raw = config_path.read_text()
+            if root.is_file():
+                if is_nerd_font_file(root):
+                    _nerd_font_installed_cache = True
+                    return True
+                continue
+            candidates = root.rglob("*")
         except OSError:
             continue
-        for line in raw.splitlines():
-            stripped = line.strip()
-            if not stripped or stripped.startswith("#"):
+        for candidate in candidates:
+            try:
+                if candidate.is_file() and is_nerd_font_file(candidate):
+                    _nerd_font_installed_cache = True
+                    return True
+            except OSError:
                 continue
-            if "=" not in stripped:
-                continue
-            key, value = (part.strip().lower() for part in stripped.split("=", 1))
-            if key != "font-family":
-                continue
-            if "nerd font" in value or "symbols nerd font" in value or value.endswith(" nfm"):
-                return True
+    _nerd_font_installed_cache = False
     return False
 
 
@@ -220,7 +237,7 @@ def configured_icon_theme() -> str:
     theme_name = tmux_option(ICON_THEME_OPTION).strip().lower()
     if theme_name and theme_name != "auto":
         return theme_name
-    if ghostty_uses_nerd_font():
+    if nerd_font_installed():
         return "nerdfont"
     return "ascii"
 

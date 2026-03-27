@@ -4,7 +4,7 @@ set -euo pipefail
 . "$(dirname "$0")/testlib.sh"
 
 export TMUX_SIDEBAR_STATE_DIR="$TEST_TMP/state"
-export TMUX_SIDEBAR_GHOSTTY_CONFIG="$TEST_TMP/no-ghostty-config"
+export TMUX_SIDEBAR_FONT_DIRS="$TEST_TMP/no-fonts"
 mkdir -p "$TMUX_SIDEBAR_STATE_DIR"
 
 fake_tmux_set_tree <<'EOF'
@@ -358,10 +358,9 @@ EOF
 cat > "$TMUX_SIDEBAR_STATE_DIR/pane-%65.json" <<'EOF'
 {"pane_id":"%65","app":"claude","status":"running","updated_at":100}
 EOF
-cat > "$TEST_TMP/ghostty-nerdfont-config" <<'EOF'
-font-family = JetBrainsMono Nerd Font Mono
-EOF
-export TMUX_SIDEBAR_GHOSTTY_CONFIG="$TEST_TMP/ghostty-nerdfont-config"
+mkdir -p "$TEST_TMP/fonts/NerdFonts"
+touch "$TEST_TMP/fonts/NerdFonts/JetBrainsMono Nerd Font Mono.ttf"
+export TMUX_SIDEBAR_FONT_DIRS="$TEST_TMP/fonts"
 
 output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
@@ -372,7 +371,7 @@ assert_contains "$output" '󱔓 htop'
 assert_contains "$output" '󱔓 bpytop'
 assert_contains "$output" '󰊢 lazygit'
 assert_contains "$output" '󰵰 claude ⏳'
-export TMUX_SIDEBAR_GHOSTTY_CONFIG="$TEST_TMP/no-ghostty-config"
+export TMUX_SIDEBAR_FONT_DIRS="$TEST_TMP/no-fonts"
 
 fake_tmux_set_tree <<'EOF'
 work|@1|editor|%2|superlongpanecommand|superlongpanecommand|1

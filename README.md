@@ -220,10 +220,11 @@ set -g @tmux_sidebar_badge_error        "❌"   # default: ❌
 
 ### Pane icons
 
-Pane icons auto-detect Nerd Fonts when tmux is running under a Ghostty setup
-whose `font-family` uses a Nerd Font. Otherwise the sidebar falls back to the
-ASCII-safe theme so it still renders cleanly on most systems and fits in the
-sidebar's narrow default width.
+Pane icons default to `auto`, which checks whether the tmux host has a Nerd
+Font installed in a standard font directory. If it finds one, the sidebar uses
+the Nerd Font icon theme. Otherwise it falls back to the ASCII-safe theme so it
+still renders cleanly on most systems and fits in the sidebar's narrow default
+width.
 
 ```tmux
 set -g @tmux_sidebar_icon_theme "auto"    # default: auto
@@ -238,7 +239,8 @@ built-in icons. Unknown commands fall back to a placeholder icon.
 
 The built-in Nerd Font theme uses glyphs such as `nf-md-face_agent` for coding
 agents, `nf-md-code_greater_than` for shells, `nf-dev-less` for `less`,
-`nf-md-cat` for `cat`, and `nf-md-dock_top` for `top`-style monitors.
+`nf-md-cat` for `cat`, `nf-md-dock_top` for `top`-style monitors, and
+`nf-md-git` for `lazygit`.
 
 You can override any individual app icon:
 
@@ -253,9 +255,15 @@ Available override keys match the canonical app ids:
 `lazygit`, `yazi`, `ranger`, `bb`, `cat`, `clojure`, `java`, `less`, `vim`,
 `ssh`, `pager`, `top`, `tmux`, and `unknown`.
 
+Installed Nerd Fonts are only a hint. If your terminal is not actually using a
+Nerd Font, the Nerd Font glyphs will not render correctly. In that case, either
+switch your terminal font to a Nerd Font or set `@tmux_sidebar_icon_theme` to
+`ascii` or `unicode` explicitly.
+
 If auto-detection picks the wrong theme, set `@tmux_sidebar_icon_theme`
 explicitly. Remote tmux sessions are especially likely to need an explicit
-setting because the server cannot reliably inspect the client terminal font.
+setting because `auto` checks fonts installed on the tmux host, not the font
+configured by the terminal client displaying that session.
 
 ### Colors
 
