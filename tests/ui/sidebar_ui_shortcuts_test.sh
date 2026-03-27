@@ -303,6 +303,35 @@ PY
 
 assert_contains "$output" '{"add_session": "as", "add_window": "aw", "close_pane": "x", "go_bottom": "G", "go_top": "gg", "jump_back": "C-o", "jump_forward": "C-i", "rename_session": "rs", "rename_window": "rw", "toggle_filter": "f"}'
 
+printf 'zw\n' > "$TEST_TMUX_DATA_DIR/option__tmux_pane_tree_add_window_shortcut.txt"
+printf 'zs\n' > "$TEST_TMUX_DATA_DIR/option__tmux_pane_tree_add_session_shortcut.txt"
+printf 'tt\n' > "$TEST_TMUX_DATA_DIR/option__tmux_pane_tree_go_top_shortcut.txt"
+printf 'B\n' > "$TEST_TMUX_DATA_DIR/option__tmux_pane_tree_go_bottom_shortcut.txt"
+printf 'C-p\n' > "$TEST_TMUX_DATA_DIR/option__tmux_pane_tree_jump_back_shortcut.txt"
+printf 'C-n\n' > "$TEST_TMUX_DATA_DIR/option__tmux_pane_tree_jump_forward_shortcut.txt"
+printf 'rsess\n' > "$TEST_TMUX_DATA_DIR/option__tmux_pane_tree_rename_session_shortcut.txt"
+printf 'rwin\n' > "$TEST_TMUX_DATA_DIR/option__tmux_pane_tree_rename_window_shortcut.txt"
+printf 'dd\n' > "$TEST_TMUX_DATA_DIR/option__tmux_pane_tree_close_pane_shortcut.txt"
+printf '\n' > "$TEST_TMUX_DATA_DIR/option__tmux_pane_tree_toggle_filter_shortcut.txt"
+
+output="$(python3 - <<'PY'
+import importlib.util
+import json
+from pathlib import Path
+
+spec = importlib.util.spec_from_file_location("sidebar_ui", Path("scripts/ui/sidebar-ui.py"))
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+
+print(json.dumps(module.configured_shortcuts(), sort_keys=True))
+PY
+)"
+
+assert_contains "$output" '{"add_session": "as", "add_window": "aw", "close_pane": "x", "go_bottom": "G", "go_top": "gg", "jump_back": "C-o", "jump_forward": "C-i", "rename_session": "rs", "rename_window": "rw", "toggle_filter": "f"}'
+assert_not_contains "$output" '"add_window": "zw"'
+
+rm -f "$TEST_TMUX_DATA_DIR"/option__tmux_pane_tree_*_shortcut.txt
+
 printf 'xy\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_add_window_shortcut.txt"
 printf 'zz\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_add_session_shortcut.txt"
 printf 'rs\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_rename_session_shortcut.txt"

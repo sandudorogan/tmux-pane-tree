@@ -62,13 +62,18 @@ def option_aliases(suffix: str) -> tuple[str, ...]:
     return (f"@tmux_pane_tree_{suffix}", f"@tmux_sidebar_{suffix}")
 
 
-def tmux_option_value(suffix: str) -> str:
+def tmux_option_value_with_presence(suffix: str) -> tuple[str, bool]:
     for name in option_aliases(suffix):
         try:
-            return run_tmux("show-options", "-gv", name).strip()
+            return run_tmux("show-options", "-gv", name).strip(), True
         except subprocess.CalledProcessError:
             continue
-    return ""
+    return "", False
+
+
+def tmux_option_value(suffix: str) -> str:
+    value, _present = tmux_option_value_with_presence(suffix)
+    return value
 
 
 def set_tmux_option_value(suffix: str, value: str) -> None:
@@ -112,10 +117,12 @@ def configured_sidebar_width() -> int:
 def configured_shortcuts() -> dict[str, str]:
     shortcuts: dict[str, str] = {}
     for action, default_shortcut in DEFAULT_SHORTCUTS.items():
-        shortcut = tmux_option_value(f"{action}_shortcut").strip()
-        if not shortcut:
+        shortcut, present = tmux_option_value_with_presence(f"{action}_shortcut")
+        if not present:
             shortcuts[action] = default_shortcut
             continue
+        if not shortcut:
+            return dict(DEFAULT_SHORTCUTS)
         shortcuts[action] = shortcut
     shortcut_values = list(shortcuts.values())
     if any("q" in shortcut for shortcut in shortcut_values):
