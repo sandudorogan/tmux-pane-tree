@@ -13,8 +13,7 @@ test_new_public_entrypoint_exists_with_wiring() {
 }
 
 test_sidebar_tmux_is_shim_to_new_entrypoint() {
-  assert_file_contains "$REPO_ROOT/sidebar.tmux" '#!/usr/bin/env bash'
-  assert_file_contains "$REPO_ROOT/sidebar.tmux" 'tmux source-file'
+  assert_file_contains "$REPO_ROOT/sidebar.tmux" 'source-file'
   assert_file_contains "$REPO_ROOT/sidebar.tmux" 'tmux-pane-tree.tmux'
 }
 

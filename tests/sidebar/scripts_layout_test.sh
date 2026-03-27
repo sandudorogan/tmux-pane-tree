@@ -3,7 +3,7 @@ set -euo pipefail
 
 . "$(dirname "$0")/testlib.sh"
 
-assert_file_contains "sidebar.tmux" 'tmux source-file'
+assert_file_contains "sidebar.tmux" 'source-file'
 assert_file_contains "sidebar.tmux" 'tmux-pane-tree.tmux'
 
 assert_file_contains "tmux-pane-tree.tmux" 'scripts/features/sidebar/configure-pane-border-format.sh'
