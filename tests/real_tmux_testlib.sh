@@ -10,12 +10,20 @@ REPO_ROOT="$(CDPATH= cd -- "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REAL_TMUX_CLIENT_PID=""
 REAL_TMUX_CLIENT_NAME=""
 
-trap 'tmux -S "$REAL_TMUX_SOCKET_PATH" kill-server 2>/dev/null || true; rm -rf "$TEST_TMP"' EXIT
-
 fail() {
   printf 'FAIL: %s\n' "$1" >&2
   exit 1
 }
+
+REAL_TMUX_BIN="$(
+  PATH="/usr/bin:/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+  command -v tmux
+)" || fail 'tmux not found for real tmux integration tests'
+export REAL_TMUX_BIN
+# run-shell helpers must not pick up a fake tmux from a prior unit-test PATH
+export PATH="/usr/bin:/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+
+trap '"$REAL_TMUX_BIN" -S "$REAL_TMUX_SOCKET_PATH" kill-server 2>/dev/null || true; rm -rf "$TEST_TMP"' EXIT
 
 assert_contains() {
   local haystack="$1"
@@ -35,7 +43,7 @@ assert_eq() {
 }
 
 real_tmux() {
-  tmux -S "$REAL_TMUX_SOCKET_PATH" -f /dev/null "$@"
+  "$REAL_TMUX_BIN" -S "$REAL_TMUX_SOCKET_PATH" -f /dev/null "$@"
 }
 
 real_tmux_shell_command() {
@@ -54,6 +62,7 @@ real_tmux_attach_control_client_info() {
   python3 - "$REAL_TMUX_SOCKET_PATH" "$session_name" "$log_file" <<'PY' &
 from __future__ import annotations
 
+import os
 import signal
 import subprocess
 import sys
@@ -75,9 +84,11 @@ def handle_signal(signum: int, frame: object) -> None:
 signal.signal(signal.SIGTERM, handle_signal)
 signal.signal(signal.SIGINT, handle_signal)
 
+tmux_bin = os.environ["REAL_TMUX_BIN"]
+
 with open(log_file, "ab", buffering=0) as log_handle:
     child = subprocess.Popen(
-        ["tmux", "-S", socket_path, "-f", "/dev/null", "-C", "attach-session", "-t", session_name],
+        [tmux_bin, "-S", socket_path, "-f", "/dev/null", "-C", "attach-session", "-t", session_name],
         stdin=subprocess.PIPE,
         stdout=log_handle,
         stderr=log_handle,
@@ -173,7 +184,7 @@ real_tmux_start_server() {
 }
 
 real_tmux_source_plugin() {
-  real_tmux_source_file "$REPO_ROOT/sidebar.conf"
+  real_tmux_source_file "$REPO_ROOT/tmux-pane-tree.tmux"
 }
 
 real_tmux_source_file() {

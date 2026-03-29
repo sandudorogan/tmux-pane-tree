@@ -2,24 +2,25 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(CDPATH= cd -- "$(dirname "$0")" && pwd)"
+SCRIPTS_DIR="$(CDPATH= cd -- "$SCRIPT_DIR/../.." && pwd)"
+. "$SCRIPTS_DIR/core/lib.sh"
 plugin_dir="$(CDPATH= cd -- "$SCRIPT_DIR/../../.." && pwd)"
 
-toggle_key="$(tmux show-options -gv @tmux_sidebar_toggle_key 2>/dev/null || true)"
-focus_key="$(tmux show-options -gv @tmux_sidebar_focus_key 2>/dev/null || true)"
+toggle_key="$(get_pane_tree_option toggle_key)"
+focus_key="$(get_pane_tree_option focus_key)"
 jump_sidebar_condition='#{m/r:^(Sidebar|tmux-sidebar)$,#{pane_title}}'
 
 bind_control_sidebar_action() {
   local action_name="$1"
   local default_key="$2"
   local script_action="$3"
-  local option_name="@tmux_sidebar_${action_name}_shortcut"
   local bound_option_name="@tmux_sidebar_bound_${action_name}_shortcut"
   local run_shell_command
   local configured_key
   local previous_key
   local binding_key
 
-  configured_key="$(tmux show-options -gv "$option_name" 2>/dev/null || true)"
+  configured_key="$(get_pane_tree_option "${action_name}_shortcut")"
   previous_key="$(tmux show-options -gv "$bound_option_name" 2>/dev/null || true)"
   binding_key="${configured_key:-$default_key}"
 

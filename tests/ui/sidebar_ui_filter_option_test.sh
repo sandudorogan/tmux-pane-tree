@@ -121,13 +121,20 @@ module.prompt_rename_window = lambda pane_id: None
 filter_state = {"value": "on"}
 
 
-def fake_tmux_option(opt):
-    if opt == "@tmux_sidebar_filter_enabled":
+def fake_tmux_option_value(suffix):
+    if suffix == "filter_enabled":
         return filter_state["value"]
     return ""
 
 
-module.tmux_option = fake_tmux_option
+def fake_set_tmux_option_value(suffix, value):
+    if suffix == "filter_enabled":
+        filter_state["value"] = value
+    tmux_commands.append(f"tmux set-option -g @tmux_pane_tree_{suffix} {value}")
+
+
+module.tmux_option_value = fake_tmux_option_value
+module.set_tmux_option_value = fake_set_tmux_option_value
 
 tmux_commands = []
 original_run = __import__("subprocess").run
@@ -137,8 +144,6 @@ def capture_run(args, **kwargs):
     if args and args[0] == "tmux":
         cmd = " ".join(args)
         tmux_commands.append(cmd)
-        if "set" in args and "@tmux_sidebar_filter_enabled" in args:
-            filter_state["value"] = args[-1]
         return original_run(["true"], **kwargs)
     return original_run(args, **kwargs)
 
@@ -195,10 +200,10 @@ screen = FakeScreen([ord("f"), ord("f"), ord("q")])
 module.run_interactive(screen)
 __import__("subprocess").run = original_run
 
-set_commands = [cmd for cmd in tmux_commands if "@tmux_sidebar_filter_enabled" in cmd]
+set_commands = [cmd for cmd in tmux_commands if "@tmux_pane_tree_filter_enabled" in cmd]
 print(json.dumps({"set_commands": set_commands}, ensure_ascii=False, sort_keys=True))
 PY
 )"
 
-assert_contains "$output" '@tmux_sidebar_filter_enabled off'
-assert_contains "$output" '@tmux_sidebar_filter_enabled on'
+assert_contains "$output" '@tmux_pane_tree_filter_enabled off'
+assert_contains "$output" '@tmux_pane_tree_filter_enabled on'

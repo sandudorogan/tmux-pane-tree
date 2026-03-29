@@ -35,9 +35,11 @@ from sidebar_ui_lib.core import (
     prompt_add_window,
     prompt_rename_session,
     prompt_rename_window,
+    set_tmux_option_value,
     sidebar_has_focus,
     shortcut_key_code,
     tmux_option,
+    tmux_option_value,
     toggle_hide_panes,
 )
 from sidebar_ui_lib.render import _run_context_menu, _write_row_map, init_sidebar_colors, render_screen
@@ -128,17 +130,11 @@ def _consume_sidebar_actions() -> list[str]:
     return [action for action in actions if action in {"jump_back", "jump_forward"}]
 
 
-def toggle_hide_panes() -> None:
-    current = tmux_option("@tmux_sidebar_hide_panes").lower() in ("on", "1", "true", "yes")
-    new_value = "off" if current else "on"
-    subprocess.run(["tmux", "set", "-g", "@tmux_sidebar_hide_panes", new_value], check=False)
-
-
 def toggle_filter() -> None:
-    current = tmux_option("@tmux_sidebar_filter_enabled").strip().lower()
+    current = tmux_option_value("filter_enabled").strip().lower()
     enabled = current not in ("off", "0", "false", "no")
     new_value = "off" if enabled else "on"
-    subprocess.run(["tmux", "set", "-g", "@tmux_sidebar_filter_enabled", new_value], check=False)
+    set_tmux_option_value("filter_enabled", new_value)
 
 
 def advance_shortcut_state(pending_key: str, key_char: str, shortcuts: dict[str, str]) -> tuple[str, str | None]:

@@ -58,10 +58,10 @@ bash scripts/features/sidebar/toggle-sidebar.sh
 assert_eq "$(fake_tmux_sidebar_count)" "0"
 assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'set-option -g @tmux_sidebar_enabled 0'
 
-assert_file_contains "sidebar.conf" 'bind-key t run-shell'
-assert_file_contains "sidebar.conf" 'ensure-sidebar-pane.sh'
-assert_file_contains "sidebar.conf" 'scripts/features/sidebar/toggle-sidebar.sh'
-assert_file_contains "sidebar.conf" 'on-pane-focus.sh'
-assert_file_contains "sidebar.conf" 'bind-key T run-shell'
-assert_file_contains "sidebar.conf" 'scripts/features/sidebar/focus-sidebar.sh'
-assert_file_contains "sidebar.conf" 'apply-key-overrides.sh'
+assert_file_contains "tmux-pane-tree.tmux" 'bind-key t run-shell'
+assert_file_contains "tmux-pane-tree.tmux" 'ensure-sidebar-pane.sh'
+assert_file_contains "tmux-pane-tree.tmux" 'scripts/features/sidebar/toggle-sidebar.sh'
+assert_file_contains "tmux-pane-tree.tmux" 'on-pane-focus.sh'
+assert_file_contains "tmux-pane-tree.tmux" 'bind-key T run-shell'
+assert_file_contains "tmux-pane-tree.tmux" 'scripts/features/sidebar/focus-sidebar.sh'
+assert_file_contains "tmux-pane-tree.tmux" 'apply-key-overrides.sh'

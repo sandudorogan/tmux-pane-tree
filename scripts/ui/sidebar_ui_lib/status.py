@@ -4,7 +4,7 @@ import os
 import re
 from pathlib import Path
 
-from .core import run_tmux, tmux_option
+from .core import run_tmux, tmux_option_value
 from .icon_config import (
     APP_ALIASES,
     ASCII_ICONS,
@@ -12,7 +12,6 @@ from .icon_config import (
     FONT_DIRS_ENV,
     FONT_FILE_SUFFIXES,
     ICON_THEMES,
-    ICON_THEME_OPTION,
     NERD_FONT_BADGES,
 )
 
@@ -38,11 +37,11 @@ NON_AGENT_COMMANDS = {
     "yazi",
     "zsh",
 }
-BADGE_OPTIONS: dict[str, str] = {
-    "running": "@tmux_sidebar_badge_running",
-    "needs-input": "@tmux_sidebar_badge_needs_input",
-    "done": "@tmux_sidebar_badge_done",
-    "error": "@tmux_sidebar_badge_error",
+BADGE_OPTION_SUFFIXES: dict[str, str] = {
+    "running": "badge_running",
+    "needs-input": "badge_needs_input",
+    "done": "badge_done",
+    "error": "badge_error",
 }
 
 _badge_cache: dict[str, str] | None = None
@@ -55,8 +54,8 @@ def configured_badges() -> dict[str, str]:
     if _badge_cache is not None:
         return _badge_cache
     badges = dict(NERD_FONT_BADGES if configured_icon_theme() == "nerdfont" else DEFAULT_BADGES)
-    for status, option in BADGE_OPTIONS.items():
-        custom = tmux_option(option)
+    for status, suffix in BADGE_OPTION_SUFFIXES.items():
+        custom = tmux_option_value(suffix)
         if custom:
             badges[status] = custom
     _badge_cache = badges
@@ -114,7 +113,7 @@ def nerd_font_installed() -> bool:
 
 
 def configured_icon_theme() -> str:
-    theme_name = tmux_option(ICON_THEME_OPTION).strip().lower()
+    theme_name = tmux_option_value("icon_theme").strip().lower()
     if theme_name and theme_name != "auto":
         return theme_name
     if nerd_font_installed():
@@ -129,7 +128,7 @@ def configured_icons() -> dict[str, str]:
     theme_name = configured_icon_theme()
     icons = dict(ICON_THEMES.get(theme_name, ASCII_ICONS))
     for app in icons:
-        custom = tmux_option(f"@tmux_sidebar_icon_{app}")
+        custom = tmux_option_value(f"icon_{app}")
         if custom:
             icons[app] = custom
     _icon_cache = icons

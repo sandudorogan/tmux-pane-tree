@@ -8,7 +8,7 @@ import shlex
 import subprocess
 from pathlib import Path
 
-from .core import STATE_DIR, tmux_option
+from .core import STATE_DIR, tmux_option, tmux_option_value
 from .tree import find_selected_row_index, render_rows, truncate_line
 
 
@@ -122,8 +122,8 @@ def hex_to_256(hex_color: str) -> int:
     return 16 + 36 * ri + 6 * gi + bi
 
 
-def _option_hex(option: str) -> str:
-    raw = tmux_option(option)
+def _option_hex_suffix(suffix: str) -> str:
+    raw = tmux_option_value(suffix)
     if raw:
         match = _HEX_COLOR_RE.search(raw)
         return match.group(1) if match else ""
@@ -160,18 +160,18 @@ def init_sidebar_colors() -> tuple[int, int, int, int]:
         return curses.A_BOLD, 0, 0, 0
     fmt_colors = _parse_border_format_colors()
     session_hex = (
-        _option_hex("@tmux_sidebar_color_session")
+        _option_hex_suffix("color_session")
         or parse_fg_hex(tmux_option("pane-active-border-style"))
         or DEFAULT_COLOR_FG
     )
     window_hex = (
-        _option_hex("@tmux_sidebar_color_window")
+        _option_hex_suffix("color_window")
         or fmt_colors.get("inactive_command", "")
         or parse_fg_hex(tmux_option("pane-border-style"))
         or DEFAULT_COLOR_FG
     )
     pane_hex = (
-        _option_hex("@tmux_sidebar_color_pane")
+        _option_hex_suffix("color_pane")
         or fmt_colors.get("active_path", "")
         or parse_fg_hex(tmux_option("status-style"))
         or DEFAULT_COLOR_FG

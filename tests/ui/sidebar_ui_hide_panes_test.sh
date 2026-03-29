@@ -146,7 +146,7 @@ module.curses.LINES = 10
 
 module.configured_shortcuts = lambda: dict(module.DEFAULT_SHORTCUTS)
 module.sidebar_has_focus = lambda: True
-module.tmux_option = lambda opt: "on" if opt == "@tmux_sidebar_hide_panes" else ""
+module.tmux_option = lambda opt: "on" if opt in ("@tmux_pane_tree_hide_panes", "@tmux_sidebar_hide_panes") else ""
 module.close_sidebar = lambda: None
 module.focus_main_pane = lambda: None
 module.prompt_add_window = lambda pane_id: None
@@ -256,7 +256,7 @@ module.curses.LINES = 10
 
 module.configured_shortcuts = lambda: dict(module.DEFAULT_SHORTCUTS)
 module.sidebar_has_focus = lambda: True
-module.tmux_option = lambda opt: "on" if opt == "@tmux_sidebar_hide_panes" else ""
+module.tmux_option = lambda opt: "on" if opt in ("@tmux_pane_tree_hide_panes", "@tmux_sidebar_hide_panes") else ""
 module.close_sidebar = lambda: None
 module.focus_main_pane = lambda: None
 module.prompt_add_window = lambda pane_id: None
@@ -332,7 +332,7 @@ module.curses.LINES = 10
 
 module.configured_shortcuts = lambda: dict(module.DEFAULT_SHORTCUTS)
 module.sidebar_has_focus = lambda: True
-module.tmux_option = lambda opt: "on" if opt == "@tmux_sidebar_hide_panes" else ""
+module.tmux_option = lambda opt: "on" if opt in ("@tmux_pane_tree_hide_panes", "@tmux_sidebar_hide_panes") else ""
 module.close_sidebar = lambda: None
 module.focus_main_pane = lambda: None
 module.prompt_add_window = lambda pane_id: None
@@ -425,9 +425,22 @@ hide_panes_state = {"value": "off"}
 
 original_tmux_option = module.tmux_option
 
+import sidebar_ui_lib.core as core_mod
+
+_orig_tmux_option_value = core_mod.tmux_option_value
+
+
+def fake_tmux_option_value(suffix: str) -> str:
+    if suffix == "hide_panes":
+        return hide_panes_state["value"]
+    return _orig_tmux_option_value(suffix)
+
+
+core_mod.tmux_option_value = fake_tmux_option_value
+
 
 def fake_tmux_option(opt):
-    if opt == "@tmux_sidebar_hide_panes":
+    if opt in ("@tmux_pane_tree_hide_panes", "@tmux_sidebar_hide_panes"):
         return hide_panes_state["value"]
     return original_tmux_option(opt)
 
@@ -442,7 +455,9 @@ def capture_run(args, **kwargs):
     if args and args[0] == "tmux":
         cmd = " ".join(args)
         tmux_commands.append(cmd)
-        if "set" in args and "@tmux_sidebar_hide_panes" in args:
+        if "set-option" in args and (
+            "@tmux_pane_tree_hide_panes" in args or "@tmux_sidebar_hide_panes" in args
+        ):
             hide_panes_state["value"] = args[-1]
         return original_run(["true"], **kwargs)
     return original_run(args, **kwargs)
@@ -491,11 +506,16 @@ module.run_interactive(screen)
 __import__("subprocess").run = original_run
 
 # Find the set commands
-set_commands = [c for c in tmux_commands if "set" in c and "@tmux_sidebar_hide_panes" in c]
+set_commands = [
+    c
+    for c in tmux_commands
+    if "set-option" in c
+    and ("@tmux_pane_tree_hide_panes" in c or "@tmux_sidebar_hide_panes" in c)
+]
 print(json.dumps({"set_commands": set_commands}, ensure_ascii=False, sort_keys=True))
 PY
 )"
 
 # First p should set to on, second should set back to off
-assert_contains "$output" '@tmux_sidebar_hide_panes on'
-assert_contains "$output" '@tmux_sidebar_hide_panes off'
+assert_contains "$output" '@tmux_pane_tree_hide_panes on'
+assert_contains "$output" '@tmux_pane_tree_hide_panes off'

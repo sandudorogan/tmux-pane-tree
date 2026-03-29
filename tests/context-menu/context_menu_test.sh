@@ -22,7 +22,7 @@ print(result[2])
 test_row_map_written() {
     local state_dir="$TEST_TMP/state"
     mkdir -p "$state_dir"
-    TMUX_SIDEBAR_STATE_DIR="$state_dir" TMUX_PANE="%99" python3 -c "
+    TMUX_SIDEBAR_STATE_DIR="$state_dir" TMUX_PANE="%99" /usr/bin/env -u TMUX_PANE_TREE_STATE_DIR python3 -c "
 import sys, os
 os.environ['TMUX_SIDEBAR_STATE_DIR'] = '$state_dir'
 os.environ['TMUX_PANE'] = '%99'

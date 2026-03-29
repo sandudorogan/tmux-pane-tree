@@ -8,10 +8,16 @@ import subprocess
 from pathlib import Path
 
 
-STATE_DIR = Path(os.environ.get(
-    "TMUX_SIDEBAR_STATE_DIR",
-    os.environ.get("XDG_STATE_HOME", str(Path.home() / ".local/state")) + "/tmux-sidebar",
-))
+def state_dir() -> Path:
+    if os.environ.get("TMUX_PANE_TREE_STATE_DIR"):
+        return Path(os.environ["TMUX_PANE_TREE_STATE_DIR"])
+    if os.environ.get("TMUX_SIDEBAR_STATE_DIR"):
+        return Path(os.environ["TMUX_SIDEBAR_STATE_DIR"])
+    base = os.environ.get("XDG_STATE_HOME") or str(Path.home() / ".local/state")
+    return Path(base) / "tmux-sidebar"
+
+
+STATE_DIR = state_dir()
 DEFAULT_SIDEBAR_WIDTH = 25
 DEFAULT_SHORTCUTS = {
     "add_window": "aw",
@@ -52,6 +58,31 @@ def run_tmux(*args: str) -> str:
     return subprocess.check_output(["tmux", *args], text=True, stderr=subprocess.DEVNULL)
 
 
+def option_aliases(suffix: str) -> tuple[str, ...]:
+    return (f"@tmux_pane_tree_{suffix}", f"@tmux_sidebar_{suffix}")
+
+
+def tmux_option_value_with_presence(suffix: str) -> tuple[str, bool]:
+    for name in option_aliases(suffix):
+        try:
+            return run_tmux("show-options", "-gv", name).strip(), True
+        except subprocess.CalledProcessError:
+            continue
+    return "", False
+
+
+def tmux_option_value(suffix: str) -> str:
+    value, _present = tmux_option_value_with_presence(suffix)
+    return value
+
+
+def set_tmux_option_value(suffix: str, value: str) -> None:
+    subprocess.run(
+        ["tmux", "set-option", "-g", f"@tmux_pane_tree_{suffix}", value],
+        check=False,
+    )
+
+
 def tmux_option(option_name: str) -> str:
     try:
         return run_tmux("show-options", "-gv", option_name).strip()
@@ -60,7 +91,7 @@ def tmux_option(option_name: str) -> str:
 
 
 def configured_scrolloff() -> int:
-    raw = tmux_option("@tmux_sidebar_scrolloff")
+    raw = tmux_option_value("scrolloff")
     if raw:
         try:
             value = int(raw)
@@ -72,14 +103,12 @@ def configured_scrolloff() -> int:
 
 
 def configured_sidebar_width() -> int:
-    for raw_width in (
-        tmux_option("@tmux_sidebar_width"),
-        str(DEFAULT_SIDEBAR_WIDTH),
-    ):
+    raw_width = tmux_option_value("width")
+    if raw_width:
         try:
             width = int(raw_width)
         except (TypeError, ValueError):
-            continue
+            width = 0
         if width > 0:
             return width
     return DEFAULT_SIDEBAR_WIDTH
@@ -88,9 +117,8 @@ def configured_sidebar_width() -> int:
 def configured_shortcuts() -> dict[str, str]:
     shortcuts: dict[str, str] = {}
     for action, default_shortcut in DEFAULT_SHORTCUTS.items():
-        try:
-            shortcut = run_tmux("show-options", "-gv", f"@tmux_sidebar_{action}_shortcut").strip()
-        except subprocess.CalledProcessError:
+        shortcut, present = tmux_option_value_with_presence(f"{action}_shortcut")
+        if not present:
             shortcuts[action] = default_shortcut
             continue
         if not shortcut:
@@ -132,9 +160,9 @@ def focus_main_pane() -> None:
 
 
 def toggle_hide_panes() -> None:
-    current = tmux_option("@tmux_sidebar_hide_panes").lower() in ("on", "1", "true", "yes")
+    current = tmux_option_value("hide_panes").lower() in ("on", "1", "true", "yes")
     new_value = "off" if current else "on"
-    subprocess.run(["tmux", "set", "-g", "@tmux_sidebar_hide_panes", new_value], check=False)
+    set_tmux_option_value("hide_panes", new_value)
 
 
 def close_sidebar() -> None:

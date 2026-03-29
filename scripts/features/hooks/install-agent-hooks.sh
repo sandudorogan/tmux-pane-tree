@@ -6,7 +6,7 @@ PLUGIN_DST="${PLUGIN_DST:-$(CDPATH= cd -- "$SCRIPT_DIR/../../.." && pwd)}"
 CLAUDE_SETTINGS="${CLAUDE_SETTINGS:-$HOME/.claude/settings.json}"
 CODEX_CONFIG="${CODEX_CONFIG:-$HOME/.codex/config.toml}"
 CURSOR_HOOKS="${CURSOR_HOOKS:-$HOME/.cursor/hooks.json}"
-OPENCODE_PLUGIN="${OPENCODE_PLUGIN:-$HOME/.config/opencode/plugins/tmux-sidebar.js}"
+OPENCODE_PLUGIN="${OPENCODE_PLUGIN:-$HOME/.config/opencode/plugins/tmux-pane-tree.js}"
 TIMESTAMP="${TIMESTAMP:-$(date +%Y%m%d%H%M%S)}"
 
 mkdir -p "$(dirname "$CLAUDE_SETTINGS")" "$(dirname "$CODEX_CONFIG")" "$(dirname "$CURSOR_HOOKS")" "$(dirname "$OPENCODE_PLUGIN")"
@@ -17,7 +17,7 @@ else
   printf '{}\n' > "$CLAUDE_SETTINGS"
 fi
 
-CLAUDE_SETTINGS="$CLAUDE_SETTINGS" PLUGIN_DST="$PLUGIN_DST" python3 - <<'PY'
+CLAUDE_SETTINGS="$CLAUDE_SETTINGS" PLUGIN_DST="$PLUGIN_DST" python3 - <<'END_CLAUDE'
 import json
 import os
 from pathlib import Path
@@ -68,7 +68,7 @@ for event_name, async_enabled in [
     ensure_event(event_name, async_enabled)
 
 path.write_text(json.dumps(data, indent=2) + "\n")
-PY
+END_CLAUDE
 
 if [ -f "$CODEX_CONFIG" ]; then
   cp "$CODEX_CONFIG" "$CODEX_CONFIG.bak-tmux-sidebar-$TIMESTAMP"
@@ -76,7 +76,7 @@ else
   : > "$CODEX_CONFIG"
 fi
 
-CODEX_CONFIG="$CODEX_CONFIG" PLUGIN_DST="$PLUGIN_DST" python3 - <<'PY'
+CODEX_CONFIG="$CODEX_CONFIG" PLUGIN_DST="$PLUGIN_DST" python3 - <<'END_CODEX'
 from pathlib import Path
 import os
 import re
@@ -90,7 +90,7 @@ if re.search(r"^notify\s*=\s*\[.*\]$", text, flags=re.M):
 else:
     text = text.rstrip() + ("\n" if text.rstrip() else "") + line + "\n"
 path.write_text(text)
-PY
+END_CODEX
 
 if [ -f "$CURSOR_HOOKS" ]; then
   cp "$CURSOR_HOOKS" "$CURSOR_HOOKS.bak-tmux-sidebar-$TIMESTAMP"
@@ -98,7 +98,7 @@ else
   printf '{\n  "version": 1,\n  "hooks": {}\n}\n' > "$CURSOR_HOOKS"
 fi
 
-CURSOR_HOOKS="$CURSOR_HOOKS" PLUGIN_DST="$PLUGIN_DST" python3 - <<'PY'
+CURSOR_HOOKS="$CURSOR_HOOKS" PLUGIN_DST="$PLUGIN_DST" python3 - <<'END_CURSOR'
 import json
 import os
 from pathlib import Path
@@ -142,13 +142,13 @@ for event_name in (
     ensure_event(event_name)
 
 path.write_text(json.dumps(data, indent=2) + "\n")
-PY
+END_CURSOR
 
 if [ -f "$OPENCODE_PLUGIN" ]; then
   cp "$OPENCODE_PLUGIN" "$OPENCODE_PLUGIN.bak-tmux-sidebar-$TIMESTAMP"
 fi
 
-OPENCODE_PLUGIN="$OPENCODE_PLUGIN" PLUGIN_DST="$PLUGIN_DST" python3 - <<'PY'
+OPENCODE_PLUGIN="$OPENCODE_PLUGIN" PLUGIN_DST="$PLUGIN_DST" python3 - <<'END_OPENCODE'
 import os
 from pathlib import Path
 
@@ -203,4 +203,4 @@ export const TmuxSidebarPlugin = async () => {{
 }}
 """.format(hook_path=str(hook))
 )
-PY
+END_OPENCODE

@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname "$0")" && pwd)"
+SCRIPTS_DIR="$(CDPATH= cd -- "$SCRIPT_DIR/../.." && pwd)"
+. "$SCRIPTS_DIR/core/lib.sh"
+
 pane_id=""
 name=""
 selected_session=""
@@ -38,7 +42,7 @@ fi
 
 tmux new-session -d -s "$name"
 
-current_order="$(tmux show-options -gv @tmux_sidebar_session_order 2>/dev/null || true)"
+current_order="$(get_pane_tree_option session_order)"
 if [ -n "$current_order" ]; then
   base_order="$(printf '%s\n' "$current_order" | tr ',' '\n')"
 else
@@ -75,4 +79,4 @@ updated_order="$(
   '
 )"
 
-tmux set-option -g @tmux_sidebar_session_order "$updated_order"
+set_pane_tree_option session_order "$updated_order"

@@ -5,7 +5,8 @@ set -euo pipefail
 
 REPO_ROOT="$(CDPATH= cd -- "$(dirname "$0")/../.." && pwd)"
 HOME_DIR="$TEST_TMP/home"
-PLUGIN_DST="$HOME_DIR/.config/tmux/plugins/tmux-sidebar"
+PLUGIN_DST="$HOME_DIR/.config/tmux/plugins/tmux-pane-tree"
+NORMALIZED_PLUGIN_DST="$(python3 -c 'from pathlib import Path; import sys; print(Path(sys.argv[1]))' "$PLUGIN_DST")"
 TMUX_CONF="$HOME_DIR/.config/tmux/tmux.conf"
 CLAUDE_SETTINGS="$HOME_DIR/.claude/settings.json"
 CODEX_CONFIG="$HOME_DIR/.codex/config.toml"
@@ -16,6 +17,7 @@ mkdir -p "$(dirname "$TMUX_CONF")" "$(dirname "$CLAUDE_SETTINGS")" "$(dirname "$
 
 cat > "$TMUX_CONF" <<'EOF'
 run '~/.config/tmux/plugins/tpm/tpm'
+source-file ~/.config/tmux/plugins/tmux-sidebar/sidebar.tmux
 EOF
 
 cat > "$CLAUDE_SETTINGS" <<'EOF'
@@ -25,10 +27,6 @@ EOF
 cat > "$CODEX_CONFIG" <<'EOF'
 model = "gpt-5"
 EOF
-
-tmux set-hook -gw 'window-pane-changed[201]' "run-shell -b '$HOME_DIR/.config/tmux/plugins/tmux-sidebar/scripts/on-pane-focus.sh #{pane_id} #{window_id}'"
-tmux set-hook -gw 'window-layout-changed[209]' "run-shell -b $HOME_DIR/.config/tmux/plugins/tmux-sidebar/scripts/notify-sidebar.sh"
-tmux set-hook -gw 'window-renamed[210]' "run-shell -b $HOME_DIR/.config/tmux/plugins/tmux-sidebar/scripts/notify-sidebar.sh"
 
 TMUX="fake-session" \
 HOME="$HOME_DIR" \
@@ -40,6 +38,6 @@ CODEX_CONFIG="$CODEX_CONFIG" \
 TIMESTAMP="20260320000000" \
 bash "$REPO_ROOT/scripts/install-live.sh"
 
-window_hooks="$(tmux show-hooks -gw)"
-assert_not_contains "$window_hooks" 'scripts/on-pane-focus.sh'
-assert_not_contains "$window_hooks" 'scripts/notify-sidebar.sh'
+assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" "source-file $TMUX_CONF"
+assert_file_contains "$TMUX_CONF" "source-file $NORMALIZED_PLUGIN_DST/tmux-pane-tree.tmux"
+assert_file_not_contains "$TMUX_CONF" 'tmux-sidebar/sidebar.tmux'

@@ -47,3 +47,25 @@ printf 'T\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_focus_key.txt"
 bash scripts/features/sidebar/apply-key-overrides.sh
 
 assert_not_contains "$(cat "$TEST_TMUX_DATA_DIR/commands.log")" 'unbind-key'
+
+# Test 5: New option names win when both are set
+fake_tmux_no_sidebar
+printf 'b\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_toggle_key.txt"
+printf 'c\n' > "$TEST_TMUX_DATA_DIR/option__tmux_pane_tree_toggle_key.txt"
+printf 'B\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_focus_key.txt"
+printf 'C\n' > "$TEST_TMUX_DATA_DIR/option__tmux_pane_tree_focus_key.txt"
+
+bash scripts/features/sidebar/apply-key-overrides.sh
+
+assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'bind-key c run-shell'
+assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'bind-key C run-shell'
+assert_file_not_contains "$TEST_TMUX_DATA_DIR/commands.log" 'bind-key b run-shell'
+assert_file_not_contains "$TEST_TMUX_DATA_DIR/commands.log" 'bind-key B run-shell'
+
+fake_tmux_no_sidebar
+printf 'b\n' > "$TEST_TMUX_DATA_DIR/option__tmux_pane_tree_toggle_key.txt"
+
+bash scripts/features/sidebar/apply-key-overrides.sh
+
+assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'unbind-key t'
+assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'bind-key b run-shell'

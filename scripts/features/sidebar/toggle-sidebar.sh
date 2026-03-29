@@ -37,7 +37,7 @@ if [ -n "$current_pane" ] && ! printf '%s\n' "$current_title" | grep -Eq "$(side
 fi
 
 tmux set-option -g @tmux_sidebar_enabled 1
-focus_on_open="$(tmux show-options -gv @tmux_sidebar_focus_on_open 2>/dev/null || true)"
+focus_on_open="$(get_pane_tree_option focus_on_open)"
 if [ -n "$current_window" ] && option_is_enabled "$focus_on_open" "1"; then
   tmux set-option -g "$(sidebar_focus_request_option "$current_window")" 1
 fi

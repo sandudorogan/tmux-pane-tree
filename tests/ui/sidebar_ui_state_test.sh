@@ -3,6 +3,8 @@ set -euo pipefail
 
 . "$(dirname "$0")/testlib.sh"
 
+unset TMUX_PANE_TREE_STATE_DIR
+
 export TMUX_SIDEBAR_STATE_DIR="$TEST_TMP/state"
 export TMUX_SIDEBAR_FONT_DIRS="$TEST_TMP/no-fonts"
 mkdir -p "$TMUX_SIDEBAR_STATE_DIR"
@@ -66,9 +68,8 @@ rm -f "$TMUX_SIDEBAR_STATE_DIR"/pane-*.json
 
 output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
-window_line="$(printf '%s\n' "$output" | grep -E '^\s+[├└]─' | sed -n '2p')"
-assert_contains "$window_line" 'codex'
-assert_not_contains "$window_line" 'codex-aarch64-apple-darwin'
+assert_contains "$output" '└─ codex'
+assert_not_contains "$output" '└─ codex-aarch64-apple-darwin'
 
 fake_tmux_set_tree <<'EOF'
 work|@1|env|%34|env|codex --full-auto|1
@@ -77,9 +78,8 @@ rm -f "$TMUX_SIDEBAR_STATE_DIR"/pane-*.json
 
 output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
-window_line="$(printf '%s\n' "$output" | grep -E '^\s+[├└]─' | sed -n '2p')"
-assert_contains "$window_line" 'codex'
-assert_not_contains "$window_line" 'env'
+assert_contains "$output" '└─ codex'
+assert_not_contains "$output" '└─ env'
 
 fake_tmux_set_tree <<'EOF'
 work|@1|editor|%4|2.1.76|2.1.76|1
@@ -209,9 +209,8 @@ EOF
 
 output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
-window_line="$(printf '%s\n' "$output" | grep -E '^\s+[├└]─' | sed -n '2p')"
-assert_contains "$window_line" 'cursor'
-assert_not_contains "$window_line" 'zsh'
+assert_contains "$output" '└─ cursor'
+assert_not_contains "$output" '└─ zsh'
 
 fake_tmux_set_tree <<'EOF'
 work|@1|editor|%117|zsh|zsh|1
@@ -346,6 +345,21 @@ assert_contains "$output" 's bash'
 rm -f "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_icon_theme.txt" \
   "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_icon_shell.txt"
 
+printf 'ascii\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_icon_theme.txt"
+printf 'unicode\n' > "$TEST_TMUX_DATA_DIR/option__tmux_pane_tree_icon_theme.txt"
+printf 'l\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_icon_shell.txt"
+printf 'n\n' > "$TEST_TMUX_DATA_DIR/option__tmux_pane_tree_icon_shell.txt"
+
+output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
+
+assert_contains "$output" 'n bash'
+assert_contains "$output" '◎ claude ⏳'
+assert_not_contains "$output" 'l bash'
+rm -f "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_icon_theme.txt" \
+  "$TEST_TMUX_DATA_DIR/option__tmux_pane_tree_icon_theme.txt" \
+  "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_icon_shell.txt" \
+  "$TEST_TMUX_DATA_DIR/option__tmux_pane_tree_icon_shell.txt"
+
 fake_tmux_set_tree <<'EOF'
 work|@1|editor|%60|sh|sh|1
 work|@1|editor|%61|less|less|0
@@ -419,6 +433,39 @@ assert_eq "$python_width" "25"
 rm -f "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_width.txt"
 export TMUX_SIDEBAR_WIDTH=''
 
+rm -f "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_width.txt"
+rm -f "$TEST_TMUX_DATA_DIR/option__tmux_pane_tree_width.txt"
+rm -f "$TEST_TMUX_DATA_DIR/option__tmux_pane_tree_session_order.txt"
+printf 'legacy-width\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_width.txt"
+printf 'new-width\n' > "$TEST_TMUX_DATA_DIR/option__tmux_pane_tree_width.txt"
+
+python_helper_output="$(
+python3 - <<'PY'
+import importlib.util
+import json
+import os
+from pathlib import Path
+
+spec = importlib.util.spec_from_file_location("sidebar_ui_core", Path("scripts/ui/sidebar_ui_lib/core.py"))
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+
+preferred_width = module.tmux_option_value("width")
+Path(os.environ["TEST_TMUX_DATA_DIR"]).joinpath("option__tmux_pane_tree_width.txt").unlink()
+legacy_width = module.tmux_option_value("width")
+module.set_tmux_option_value("session_order", "alpha,beta")
+
+print(json.dumps({
+    "aliases": list(module.option_aliases("width")),
+    "preferred_width": preferred_width,
+    "legacy_width": legacy_width,
+}))
+PY
+)"
+
+assert_eq "$python_helper_output" '{"aliases": ["@tmux_pane_tree_width", "@tmux_sidebar_width"], "preferred_width": "new-width", "legacy_width": "legacy-width"}'
+assert_eq "$(cat "$TEST_TMUX_DATA_DIR/option__tmux_pane_tree_session_order.txt")" 'alpha,beta'
+
 fake_tmux_set_tree <<'EOF'
 work|@1|2.1.76|%20|2.1.76|2.1.76|1
 work|@1|2.1.76|%21|lazygit|lazygit|0
@@ -431,9 +478,8 @@ EOF
 
 output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
-window_line="$(printf '%s\n' "$output" | grep -E '^\s+[├└]─' | sed -n '2p')"
-assert_contains "$window_line" 'claude'
-assert_not_contains "$window_line" '2.1.76'
+assert_contains "$output" 'claude ❓'
+assert_not_contains "$output" '└─ 2.1.76'
 
 fake_tmux_set_tree <<'EOF'
 work|@1|2.1.76|%23|2.1.76|2.1.76|1
@@ -469,9 +515,8 @@ EOF
 
 output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
-window_line="$(printf '%s\n' "$output" | grep -E '^\s+[├└]─' | sed -n '2p')"
-assert_contains "$window_line" 'claude'
-assert_not_contains "$window_line" '2.1.76'
+assert_contains "$output" 'claude ⏳'
+assert_not_contains "$output" '└─ 2.1.76'
 
 fake_tmux_set_tree <<'EOF'
 work|@1|editor|%30|2.1.76|⠂ Claude Code|1
@@ -501,3 +546,42 @@ rm -f "$TMUX_SIDEBAR_STATE_DIR"/pane-*.json
 output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
 assert_contains "$output" 'C claude ❌'
+
+unset TMUX_SIDEBAR_STATE_DIR
+export TMUX_PANE_TREE_STATE_DIR="$TEST_TMP/pane-tree-state-alias"
+mkdir -p "$TMUX_PANE_TREE_STATE_DIR"
+
+fake_tmux_set_tree <<'EOF'
+work|@1|editor|%200|python3|assistant runner|1
+EOF
+cat > "$TMUX_PANE_TREE_STATE_DIR/pane-%200.json" <<'EOF'
+{"pane_id":"%200","app":"claude","status":"running","updated_at":100}
+EOF
+
+output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
+
+assert_contains "$output" 'claude ⏳'
+
+unset TMUX_PANE_TREE_STATE_DIR
+export TMUX_SIDEBAR_STATE_DIR="$TEST_TMP/state"
+mkdir -p "$TMUX_SIDEBAR_STATE_DIR"
+
+unset TMUX_SIDEBAR_STATE_DIR
+export XDG_STATE_HOME=''
+python_state_dir="$(
+python3 - <<'PY'
+import importlib.util
+from pathlib import Path
+
+spec = importlib.util.spec_from_file_location("sidebar_ui", Path("scripts/ui/sidebar-ui.py"))
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+print(module.STATE_DIR)
+PY
+)"
+
+assert_eq "$python_state_dir" "$HOME/.local/state/tmux-sidebar"
+
+unset XDG_STATE_HOME
+export TMUX_SIDEBAR_STATE_DIR="$TEST_TMP/state"
+mkdir -p "$TMUX_SIDEBAR_STATE_DIR"

@@ -1,8 +1,60 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+pane_tree_option_name() {
+  local suffix="$1"
+  printf '@tmux_pane_tree_%s\n' "$suffix"
+}
+
+legacy_sidebar_option_name() {
+  local suffix="$1"
+  printf '@tmux_sidebar_%s\n' "$suffix"
+}
+
+get_pane_tree_option() {
+  local suffix="$1"
+  local new_name legacy_name value
+  new_name="$(pane_tree_option_name "$suffix")"
+  legacy_name="$(legacy_sidebar_option_name "$suffix")"
+  if value="$(tmux show-options -gv "$new_name" 2>/dev/null)"; then
+    printf '%s\n' "$value"
+    return 0
+  fi
+  value="$(tmux show-options -gv "$legacy_name" 2>/dev/null || true)"
+  printf '%s\n' "$value"
+}
+
+set_pane_tree_option() {
+  local suffix="$1"
+  local value="$2"
+  tmux set-option -g "$(pane_tree_option_name "$suffix")" "$value"
+}
+
+pane_tree_plugin_dir() {
+  local fallback="${1:-}"
+  if [ -n "${TMUX_PANE_TREE_PLUGIN_DIR:-}" ]; then
+    printf '%s\n' "$TMUX_PANE_TREE_PLUGIN_DIR"
+    return 0
+  fi
+  if [ -n "${TMUX_SIDEBAR_PLUGIN_DIR:-}" ]; then
+    printf '%s\n' "$TMUX_SIDEBAR_PLUGIN_DIR"
+    return 0
+  fi
+  if [ -n "$fallback" ]; then
+    printf '%s\n' "$fallback"
+  fi
+}
+
 print_state_dir() {
-  printf '%s\n' "${TMUX_SIDEBAR_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/tmux-sidebar}"
+  if [ -n "${TMUX_PANE_TREE_STATE_DIR:-}" ]; then
+    printf '%s\n' "$TMUX_PANE_TREE_STATE_DIR"
+    return 0
+  fi
+  if [ -n "${TMUX_SIDEBAR_STATE_DIR:-}" ]; then
+    printf '%s\n' "$TMUX_SIDEBAR_STATE_DIR"
+    return 0
+  fi
+  printf '%s\n' "${XDG_STATE_HOME:-$HOME/.local/state}/tmux-sidebar"
 }
 
 sidebar_pane_title() {

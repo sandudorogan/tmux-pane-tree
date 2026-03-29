@@ -4,12 +4,12 @@ import json
 import subprocess
 from collections import OrderedDict
 
-from .core import STATE_DIR, SIDEBAR_TITLES, configured_sidebar_width, run_tmux, tmux_option
+from .core import STATE_DIR, SIDEBAR_TITLES, configured_sidebar_width, run_tmux, tmux_option, tmux_option_value
 from .status import badge_for_status, effective_pane_status, live_agent_app, normalize_token, pane_display_label, pane_icon, window_display_name
 
 
 def ordered_sessions(sessions: OrderedDict[str, dict]) -> list[dict]:
-    configured_order = [name.strip() for name in tmux_option("@tmux_sidebar_session_order").split(",") if name.strip()]
+    configured_order = [name.strip() for name in tmux_option_value("session_order").split(",") if name.strip()]
     if not configured_order:
         return list(sessions.values())
 
@@ -30,12 +30,12 @@ def ordered_sessions(sessions: OrderedDict[str, dict]) -> list[dict]:
 
 
 def configured_filter_tokens() -> list[str]:
-    enabled_raw = tmux_option("@tmux_sidebar_filter_enabled").strip().lower()
+    enabled_raw = tmux_option_value("filter_enabled").strip().lower()
     if enabled_raw in ("off", "0", "false", "no"):
         return []
     return [
         token
-        for token in (normalize_token(value) for value in tmux_option("@tmux_sidebar_filter").split(","))
+        for token in (normalize_token(value) for value in tmux_option_value("filter").split(","))
         if token
     ]
 
@@ -129,7 +129,7 @@ def load_tree() -> list[dict]:
             filtered_sessions[session_name] = {**session, "windows": filtered_windows}
     sessions = filtered_sessions
 
-    hide_panes = tmux_option("@tmux_sidebar_hide_panes").lower() in ("on", "1", "true", "yes")
+    hide_panes = tmux_option_value("hide_panes").lower() in ("on", "1", "true", "yes")
 
     rows: list[dict] = []
     session_items = ordered_sessions(sessions)

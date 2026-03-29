@@ -67,7 +67,7 @@ fi
 creating="$(tmux show-options -gv "$sidebar_creating_option" 2>/dev/null || true)"
 [ "$creating" != "1" ] || exit 0
 
-configured_sidebar_width="$(tmux show-options -gv @tmux_sidebar_width 2>/dev/null || true)"
+configured_sidebar_width="$(get_pane_tree_option width)"
 sidebar_width="${configured_sidebar_width:-25}"
 current_pane="$target_pane"
 if [ -z "$current_pane" ]; then

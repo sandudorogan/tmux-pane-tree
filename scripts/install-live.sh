@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PLUGIN_SRC="${PLUGIN_SRC:-$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)}"
-PLUGIN_DST="${PLUGIN_DST:-$HOME/.config/tmux/plugins/tmux-sidebar}"
+PLUGIN_DST="${PLUGIN_DST:-$HOME/.config/tmux/plugins/tmux-pane-tree}"
 TMUX_CONF="${TMUX_CONF:-$HOME/.config/tmux/tmux.conf}"
 CLAUDE_SETTINGS="${CLAUDE_SETTINGS:-$HOME/.claude/settings.json}"
 CODEX_CONFIG="${CODEX_CONFIG:-$HOME/.codex/config.toml}"
@@ -13,39 +13,78 @@ mkdir -p "$(dirname "$PLUGIN_DST")"
 rm -rf "$PLUGIN_DST"
 mkdir -p "$PLUGIN_DST"
 cp -R "$PLUGIN_SRC"/. "$PLUGIN_DST"/
-chmod +x "$PLUGIN_DST"/sidebar.tmux "$PLUGIN_DST"/examples/*.sh
+chmod +x "$PLUGIN_DST"/sidebar.tmux "$PLUGIN_DST"/tmux-pane-tree.tmux "$PLUGIN_DST"/examples/*.sh
 find "$PLUGIN_DST/scripts" -type f -name '*.sh' -exec chmod +x {} +
 
 cp "$TMUX_CONF" "$TMUX_CONF.bak-tmux-sidebar-$TIMESTAMP"
-python3 - <<'PY'
+TMUX_CONF="$TMUX_CONF" PLUGIN_DST="$PLUGIN_DST" python3 - <<'PY'
+import os
 from pathlib import Path
 
-path = Path.home() / ".config/tmux/tmux.conf"
-plugin_dir = "~/.config/tmux/plugins/tmux-sidebar"
-abs_plugin_dir = str(Path.home() / ".config/tmux/plugins/tmux-sidebar")
-line = f"source-file {abs_plugin_dir}/sidebar.conf"
-stale_patterns = [
-    f'if-shell "test -f {plugin_dir}/sidebar.tmux" "source-file {plugin_dir}/sidebar.tmux"',
-    f"source-file {plugin_dir}/sidebar.tmux",
-    f"source-file {abs_plugin_dir}/sidebar.tmux",
-    f"run-shell '{plugin_dir}/sidebar.tmux'",
-    f"run-shell '{abs_plugin_dir}/sidebar.tmux'",
-    f'if-shell "test -f {plugin_dir}/sidebar.conf" "source-file {plugin_dir}/sidebar.conf"',
-    f"source-file {plugin_dir}/sidebar.conf",
-    f"source-file {abs_plugin_dir}/sidebar.conf",
-    f"run-shell '{plugin_dir}/sidebar.conf'",
-    f"run-shell '{abs_plugin_dir}/sidebar.conf'",
-]
-text = path.read_text()
-for pat in stale_patterns:
-    text = text.replace(pat + "\n", "")
-    text = text.replace("\n" + pat, "")
+tmux_conf = Path(os.environ["TMUX_CONF"]).expanduser()
+plugin_dst = Path(os.environ["PLUGIN_DST"]).expanduser()
+source_line = f"source-file {plugin_dst / 'tmux-pane-tree.tmux'}"
+
+text = tmux_conf.read_text()
+lines = []
+plugin_shim_line = str(plugin_dst / "sidebar.tmux")
+plugin_conf_line = str(plugin_dst / "sidebar.conf")
+for line in text.splitlines(keepends=True):
+    stripped = line.strip()
+    if not stripped:
+        lines.append(line)
+        continue
+    if "tmux-pane-tree.tmux" in stripped and "source-file" in stripped:
+        continue
+    if "source-file" in stripped and "sidebar.tmux" in stripped and (
+        "tmux-sidebar" in line
+        or "tmux-pane-tree" in line
+        or plugin_shim_line in stripped
+    ):
+        continue
+    if "run-shell" in stripped and "sidebar.tmux" in stripped and (
+        "tmux-sidebar" in line
+        or "tmux-pane-tree" in line
+        or plugin_shim_line in stripped
+    ):
+        continue
+    if "source-file" in stripped and "sidebar.conf" in stripped and (
+        "tmux-sidebar" in line
+        or "tmux-pane-tree" in line
+        or plugin_conf_line in stripped
+    ):
+        continue
+    if "run-shell" in stripped and "sidebar.conf" in stripped and (
+        "tmux-sidebar" in line
+        or "tmux-pane-tree" in line
+        or plugin_conf_line in stripped
+    ):
+        continue
+    if "if-shell" in stripped and "sidebar.tmux" in stripped and (
+        "tmux-sidebar" in line
+        or "tmux-pane-tree" in line
+        or plugin_shim_line in stripped
+    ):
+        continue
+    if "if-shell" in stripped and "sidebar.conf" in stripped and (
+        "tmux-sidebar" in line
+        or "tmux-pane-tree" in line
+        or plugin_conf_line in stripped
+    ):
+        continue
+    if "tmux-sidebar" in line and ("sidebar.tmux" in line or "sidebar.conf" in line):
+        continue
+    lines.append(line)
+
+text = "".join(lines)
+
 tpm_line = "run '~/.config/tmux/plugins/tpm/tpm'"
 if tpm_line in text:
-    text = text.replace(tpm_line, f"{tpm_line}\n{line}", 1)
+    text = text.replace(tpm_line, f"{tpm_line}\n{source_line}\n", 1)
 else:
-    text = text.rstrip() + "\n" + line + "\n"
-path.write_text(text)
+    text = text.rstrip() + ("\n" if text and not text.endswith("\n") else "") + source_line + "\n"
+
+tmux_conf.write_text(text)
 PY
 
 CLAUDE_SETTINGS="$CLAUDE_SETTINGS" \

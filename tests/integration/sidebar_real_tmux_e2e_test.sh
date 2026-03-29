@@ -57,7 +57,7 @@ attached_client_name="$(real_tmux_wait_for_client_name)"
 assert_eq "$attached_client_name" "$client_name"
 menu_file="$REAL_TMUX_STATE_DIR/menu-cmd.tmux"
 rm -f "$menu_file"
-TMUX_SIDEBAR_STATE_DIR="$REAL_TMUX_STATE_DIR" \
+/usr/bin/env -u TMUX_PANE_TREE_STATE_DIR TMUX_SIDEBAR_STATE_DIR="$REAL_TMUX_STATE_DIR" \
   bash "$REPO_ROOT/scripts/features/context-menu/show-context-menu.sh" \
     "$sidebar_pane_id" 0 10 0 "$client_name"
 menu_command=""

@@ -122,3 +122,12 @@ assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'wait-for -U @tmux_sideb
 assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'split-window -t %2'
 assert_file_contains "$TEST_TMUX_DATA_DIR/toggle_panes.txt" '%99|Sidebar|@2'
 assert_file_not_contains "$TEST_TMUX_DATA_DIR/commands.log" 'split-window -t %1'
+
+fake_tmux_no_sidebar
+fake_tmux_register_pane "%1" "work" "@1" "editor" "nvim"
+printf '1\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_enabled.txt"
+printf '28\n' > "$TEST_TMUX_DATA_DIR/option__tmux_pane_tree_width.txt"
+
+bash scripts/features/sidebar/ensure-sidebar-pane.sh
+
+assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'split-window -t %1 -h -b -d -f -l 28'

@@ -42,11 +42,11 @@ PY
 unset TEST_TMUX_PROMPT_RESPONSE
 
 assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'new-session -d -s my-session'
-assert_eq "$(cat "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_session_order.txt")" 'session1,my-session,session2'
+assert_eq "$(cat "$TEST_TMUX_DATA_DIR/option__tmux_pane_tree_session_order.txt")" 'session1,my-session,session2'
 
 fake_tmux_no_sidebar
 fake_tmux_register_pane "%1" "session1" "@1" "editor" "nvim"
-printf 'session1,session2\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_session_order.txt"
+printf 'session1,session2\n' > "$TEST_TMUX_DATA_DIR/option__tmux_pane_tree_session_order.txt"
 
 export TEST_TMUX_PROMPT_RESPONSE="renamed-session"
 python3 - <<'PY'
@@ -62,7 +62,7 @@ PY
 unset TEST_TMUX_PROMPT_RESPONSE
 
 assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'rename-session -t session1 renamed-session'
-assert_eq "$(cat "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_session_order.txt")" 'renamed-session,session2'
+assert_eq "$(cat "$TEST_TMUX_DATA_DIR/option__tmux_pane_tree_session_order.txt")" 'renamed-session,session2'
 
 fake_tmux_no_sidebar
 fake_tmux_register_pane "%1" "work" "@1" "editor" "nvim" "nvim" "4"
