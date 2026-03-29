@@ -241,11 +241,14 @@ the Nerd Font icon theme. Otherwise it falls back to the ASCII-safe theme so it
 still renders cleanly on most systems and fits in the sidebar's narrow default
 width.
 
+Use the `@tmux_pane_tree_icon_*` option prefix for icon config. Legacy
+`@tmux_sidebar_icon_*` aliases still work during the compatibility window.
+
 ```tmux
-set -g @tmux_sidebar_icon_theme "auto"    # default: auto
-set -g @tmux_sidebar_icon_theme "ascii"   # force ASCII-safe icons
-set -g @tmux_sidebar_icon_theme "unicode" # optional richer built-in theme
-set -g @tmux_sidebar_icon_theme "nerdfont" # force Nerd Font glyphs
+set -g @tmux_pane_tree_icon_theme "auto"     # default: auto
+set -g @tmux_pane_tree_icon_theme "ascii"    # force ASCII-safe icons
+set -g @tmux_pane_tree_icon_theme "unicode"  # optional richer built-in theme
+set -g @tmux_pane_tree_icon_theme "nerdfont" # force Nerd Font glyphs
 ```
 
 Known panes such as shells, coding agents, `node`, `lazygit`, `yazi`,
@@ -260,9 +263,9 @@ agents, `nf-md-code_greater_than` for shells, `nf-dev-less` for `less`,
 You can override any individual app icon:
 
 ```tmux
-set -g @tmux_sidebar_icon_claude "A"
-set -g @tmux_sidebar_icon_shell  ">"
-set -g @tmux_sidebar_icon_unknown "?"
+set -g @tmux_pane_tree_icon_claude "A"
+set -g @tmux_pane_tree_icon_shell  ">"
+set -g @tmux_pane_tree_icon_unknown "?"
 ```
 
 Available override keys match the canonical app ids:
@@ -272,13 +275,17 @@ Available override keys match the canonical app ids:
 
 Installed Nerd Fonts are only a hint. If your terminal is not actually using a
 Nerd Font, the Nerd Font glyphs will not render correctly. In that case, either
-switch your terminal font to a Nerd Font or set `@tmux_sidebar_icon_theme` to
+switch your terminal font to a Nerd Font or set `@tmux_pane_tree_icon_theme` to
 `ascii` or `unicode` explicitly.
 
-If auto-detection picks the wrong theme, set `@tmux_sidebar_icon_theme`
+If auto-detection picks the wrong theme, set `@tmux_pane_tree_icon_theme`
 explicitly. Remote tmux sessions are especially likely to need an explicit
 setting because `auto` checks fonts installed on the tmux host, not the font
 configured by the terminal client displaying that session.
+
+To override the font directories checked by `auto`, set
+`TMUX_PANE_TREE_FONT_DIRS` to a path-separated list. Legacy
+`TMUX_SIDEBAR_FONT_DIRS` still works as a fallback.
 
 ### Colors
 
@@ -334,7 +341,7 @@ set -g @tmux_pane_tree_install_agent_hooks 1   # default: 0
 | `@tmux_pane_tree_badge_needs_input`     |  `❓`   | Badge for needs-input status     |
 | `@tmux_pane_tree_badge_done`            |  `✅`   | Badge for done status            |
 | `@tmux_pane_tree_badge_error`           |  `❌`   | Badge for error status           |
-| `@tmux_sidebar_icon_theme`              | `auto`  | Pane icon theme / auto-detect    |
+| `@tmux_pane_tree_icon_theme`           | `auto`  | Pane icon theme / auto-detect    |
 | `@tmux_pane_tree_color_session`         |    —    | Session name color (hex)         |
 | `@tmux_pane_tree_color_window`          |    —    | Window name color (hex)          |
 | `@tmux_pane_tree_color_pane`            |    —    | Pane name color (hex)            |

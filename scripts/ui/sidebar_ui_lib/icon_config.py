@@ -134,6 +134,6 @@ APP_ALIASES: dict[str, str] = {
     "top": "top",
     "tmux": "tmux",
 }
-ICON_THEME_OPTION = "@tmux_sidebar_icon_theme"
-FONT_DIRS_ENV = "TMUX_SIDEBAR_FONT_DIRS"
+FONT_DIRS_ENV = "TMUX_PANE_TREE_FONT_DIRS"
+LEGACY_FONT_DIRS_ENV = "TMUX_SIDEBAR_FONT_DIRS"
 FONT_FILE_SUFFIXES = {".otf", ".otc", ".ttc", ".ttf"}

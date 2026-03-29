@@ -12,6 +12,7 @@ from .icon_config import (
     FONT_DIRS_ENV,
     FONT_FILE_SUFFIXES,
     ICON_THEMES,
+    LEGACY_FONT_DIRS_ENV,
     NERD_FONT_BADGES,
 )
 
@@ -68,6 +69,8 @@ def badge_for_status(status: str) -> str:
 
 def font_search_paths() -> tuple[Path, ...]:
     override = os.environ.get(FONT_DIRS_ENV)
+    if override is None:
+        override = os.environ.get(LEGACY_FONT_DIRS_ENV)
     if override is not None:
         return tuple(Path(path).expanduser() for path in override.split(os.pathsep) if path)
     home = Path.home()

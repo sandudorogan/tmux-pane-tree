@@ -4,9 +4,10 @@ set -euo pipefail
 . "$(dirname "$0")/testlib.sh"
 
 unset TMUX_PANE_TREE_STATE_DIR
+unset TMUX_SIDEBAR_FONT_DIRS
 
 export TMUX_SIDEBAR_STATE_DIR="$TEST_TMP/state"
-export TMUX_SIDEBAR_FONT_DIRS="$TEST_TMP/no-fonts"
+export TMUX_PANE_TREE_FONT_DIRS="$TEST_TMP/no-fonts"
 mkdir -p "$TMUX_SIDEBAR_STATE_DIR"
 
 fake_tmux_set_tree <<'EOF'
@@ -330,20 +331,20 @@ EOF
 cat > "$TMUX_SIDEBAR_STATE_DIR/pane-%50.json" <<'EOF'
 {"pane_id":"%50","app":"claude","status":"running","updated_at":100}
 EOF
-printf 'unicode\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_icon_theme.txt"
+printf 'unicode\n' > "$TEST_TMUX_DATA_DIR/option__tmux_pane_tree_icon_theme.txt"
 
 output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
 assert_contains "$output" '› bash'
 assert_contains "$output" '◎ claude ⏳'
 
-printf 's\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_icon_shell.txt"
+printf 's\n' > "$TEST_TMUX_DATA_DIR/option__tmux_pane_tree_icon_shell.txt"
 
 output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
 assert_contains "$output" 's bash'
-rm -f "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_icon_theme.txt" \
-  "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_icon_shell.txt"
+rm -f "$TEST_TMUX_DATA_DIR/option__tmux_pane_tree_icon_theme.txt" \
+  "$TEST_TMUX_DATA_DIR/option__tmux_pane_tree_icon_shell.txt"
 
 printf 'ascii\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_icon_theme.txt"
 printf 'unicode\n' > "$TEST_TMUX_DATA_DIR/option__tmux_pane_tree_icon_theme.txt"
@@ -386,7 +387,9 @@ cat > "$TMUX_SIDEBAR_STATE_DIR/pane-%69.json" <<'EOF'
 EOF
 mkdir -p "$TEST_TMP/fonts/NerdFonts"
 touch "$TEST_TMP/fonts/NerdFonts/JetBrainsMono Nerd Font Mono.ttf"
-export TMUX_SIDEBAR_FONT_DIRS="$TEST_TMP/fonts"
+export TMUX_PANE_TREE_FONT_DIRS="$TEST_TMP/no-fonts"
+export TMUX_SIDEBAR_FONT_DIRS="$TEST_TMP/no-fonts"
+export TMUX_PANE_TREE_FONT_DIRS="$TEST_TMP/fonts"
 
 output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
@@ -400,7 +403,9 @@ assert_contains "$output" '󰵰 claude '
 assert_contains "$output" '󰵰 claude '
 assert_contains "$output" '󰵰 claude '
 assert_contains "$output" '󰵰 claude '
-export TMUX_SIDEBAR_FONT_DIRS="$TEST_TMP/no-fonts"
+unset TMUX_PANE_TREE_FONT_DIRS
+unset TMUX_SIDEBAR_FONT_DIRS
+export TMUX_PANE_TREE_FONT_DIRS="$TEST_TMP/no-fonts"
 
 fake_tmux_set_tree <<'EOF'
 work|@1|editor|%2|superlongpanecommand|superlongpanecommand|1
