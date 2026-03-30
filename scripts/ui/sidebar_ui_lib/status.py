@@ -161,6 +161,18 @@ def looks_like_cursor(value: str) -> bool:
     return normalize_token(value).startswith("cursor")
 
 
+def looks_like_pi(value: str) -> bool:
+    token = normalize_token(value)
+    if token == "pi":
+        return True
+    return bool(re.search(r"\bpi\b", value) and re.search(r"π", value))
+
+
+def looks_like_kiro(value: str) -> bool:
+    token = normalize_token(value)
+    return token in ("kiro", "kiro-cli") or token.startswith("kiro")
+
+
 def looks_like_claude(value: str) -> bool:
     token = normalize_token(value)
     if token == "claude" or token.startswith("claude-") or token.startswith("claude_"):
@@ -181,7 +193,7 @@ def should_preserve_live_label(command: str, title: str) -> bool:
 def state_agent_app(command: str, title: str, state: dict | None) -> str:
     app = str((state or {}).get("app", "")).strip().lower()
     status = str((state or {}).get("status", "")).strip().lower()
-    if app not in ("claude", "codex", "opencode", "cursor"):
+    if app not in ("claude", "codex", "opencode", "cursor", "pi", "kiro"):
         return ""
     if app == "cursor":
         if status and status != "idle":
@@ -218,6 +230,10 @@ def live_agent_app(command: str, title: str, state: dict | None) -> str:
         return "opencode"
     if looks_like_cursor(command) or looks_like_cursor(title):
         return "cursor"
+    if looks_like_pi(command) or looks_like_pi(title):
+        return "pi"
+    if looks_like_kiro(command) or looks_like_kiro(title):
+        return "kiro"
     if looks_like_claude(command) or looks_like_claude(title):
         return "claude"
     if looks_like_semver(command) and not should_preserve_live_label(command, title):

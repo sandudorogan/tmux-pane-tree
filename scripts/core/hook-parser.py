@@ -197,9 +197,34 @@ def write_result(status: str, message: str) -> None:
         print(message)
 
 
+def parse_pi(event: str, payload: str) -> tuple[str, str]:
+    data = load_payload(payload)
+    raw_event = str(
+        event
+        or data.get("event")
+        or ""
+    ).strip()
+    message = str(data.get("message") or "").strip()
+
+    if raw_event in ("session_start", "session_shutdown"):
+        status = "idle"
+    elif raw_event in ("agent_start", "turn_start", "tool_call"):
+        status = "running"
+    elif raw_event == "agent_end":
+        status = "done"
+    elif raw_event == "needs_input":
+        status = "needs-input"
+    elif raw_event == "error":
+        status = "error"
+    else:
+        status = ""
+
+    return status, message
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("app", choices=("claude", "codex", "opencode", "cursor"))
+    parser.add_argument("app", choices=("claude", "codex", "opencode", "cursor", "pi", "kiro"))
     parser.add_argument("event", nargs="?", default="")
     args = parser.parse_args()
 
@@ -210,6 +235,10 @@ def main() -> None:
         status, message = parse_codex(args.event, payload)
     elif args.app == "cursor":
         status, message = parse_cursor(args.event, payload)
+    elif args.app == "pi":
+        status, message = parse_pi(args.event, payload)
+    elif args.app == "kiro":
+        status, message = parse_pi(args.event, payload)
     else:
         status, message = parse_opencode(args.event, payload)
     write_result(status, message)
