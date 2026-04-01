@@ -50,6 +50,11 @@ rm -f "$TEST_HOOK_CAPTURE"
 printf '%s' '{"hook_event_name":"SubagentStop","message":"Finished subagent task"}' | bash scripts/features/hooks/hook-claude.sh
 [ ! -f "$TEST_HOOK_CAPTURE" ] || fail "claude subagent stop should be suppressed"
 
+export TEST_HOOK_CAPTURE="$TEST_TMP/claude-hook-subagent-start.txt"
+rm -f "$TEST_HOOK_CAPTURE"
+printf '%s' '{"hook_event_name":"SubagentStart","message":"Delegating"}' | bash scripts/features/hooks/hook-claude.sh
+[ ! -f "$TEST_HOOK_CAPTURE" ] || fail "claude subagent start should be suppressed"
+
 export TEST_HOOK_CAPTURE="$TEST_TMP/claude-hook-stop.txt"
 printf '%s' '{"hook_event_name":"Stop","message":"Finished task"}' | bash scripts/features/hooks/hook-claude.sh
 assert_file_contains "$TEST_HOOK_CAPTURE" '--status done'
