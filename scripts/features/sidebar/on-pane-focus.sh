@@ -12,9 +12,11 @@ enabled="$(tmux show-options -gv @tmux_sidebar_enabled 2>/dev/null || printf '0\
 
 if [ -n "$pane_id" ]; then
   pane_title="$(tmux display-message -p -t "$pane_id" '#{pane_title}' 2>/dev/null || true)"
-  if ! printf '%s\n' "$pane_title" | grep -Eq "$(sidebar_title_pattern)"; then
-    tmux set-option -g @tmux_sidebar_main_pane "$pane_id"
+  if printf '%s\n' "$pane_title" | grep -Eq "$(sidebar_title_pattern)"; then
+    # Focused pane IS the sidebar — no need to ensure or update anything
+    exit 0
   fi
+  tmux set-option -g @tmux_sidebar_main_pane "$pane_id"
 
   if [[ "$pane_id" =~ ^%[0-9]+$ ]]; then
     state_dir="$(print_state_dir)"
