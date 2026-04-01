@@ -46,7 +46,12 @@ printf '%s' '{"hook_event_name":"UserPromptSubmit"}' | bash scripts/features/hoo
 assert_file_contains "$TEST_HOOK_CAPTURE" '--status running'
 
 export TEST_HOOK_CAPTURE="$TEST_TMP/claude-hook-subagent-stop.txt"
+rm -f "$TEST_HOOK_CAPTURE"
 printf '%s' '{"hook_event_name":"SubagentStop","message":"Finished subagent task"}' | bash scripts/features/hooks/hook-claude.sh
+[ ! -f "$TEST_HOOK_CAPTURE" ] || fail "claude subagent stop should be suppressed"
+
+export TEST_HOOK_CAPTURE="$TEST_TMP/claude-hook-stop.txt"
+printf '%s' '{"hook_event_name":"Stop","message":"Finished task"}' | bash scripts/features/hooks/hook-claude.sh
 assert_file_contains "$TEST_HOOK_CAPTURE" '--status done'
 
 export TEST_HOOK_CAPTURE="$TEST_TMP/codex-hook.txt"
@@ -58,6 +63,13 @@ assert_file_contains "$TEST_HOOK_CAPTURE" '--app codex'
 assert_file_contains "$TEST_HOOK_CAPTURE" '--status done'
 assert_file_contains "$TEST_PEON_CAPTURE" 'agent-turn-complete'
 assert_file_contains "$TEST_PEON_STDIN_CAPTURE" '"summary":"Finished task"'
+
+export TEST_HOOK_CAPTURE="$TEST_TMP/codex-hook-delegate-complete.txt"
+rm -f "$TEST_HOOK_CAPTURE"
+printf '%s' '{"permission_mode":"delegate","summary":"Finished delegated task"}' | bash scripts/features/hooks/hook-codex.sh agent-turn-complete
+[ ! -f "$TEST_HOOK_CAPTURE" ] || fail "codex delegate completion should be suppressed"
+assert_file_contains "$TEST_PEON_CAPTURE" 'agent-turn-complete'
+assert_file_contains "$TEST_PEON_STDIN_CAPTURE" '"permission_mode":"delegate"'
 
 export TEST_HOOK_CAPTURE="$TEST_TMP/codex-hook-json-arg.txt"
 python3 - <<'PY'
@@ -168,7 +180,7 @@ assert_file_contains "$TEST_HOOK_CAPTURE" '--status running'
 export TEST_HOOK_CAPTURE="$TEST_TMP/cursor-hook-subagent-stop.txt"
 rm -f "$TEST_HOOK_CAPTURE"
 printf '%s' '{"hook_event_name":"subagentStop","workspace_roots":["/work/project"],"agent_message":"Subagent finished"}' | bash scripts/features/hooks/hook-cursor.sh || true
-assert_file_contains "$TEST_HOOK_CAPTURE" '--status done'
+[ ! -f "$TEST_HOOK_CAPTURE" ] || fail "cursor subagent stop should be suppressed"
 
 export TEST_HOOK_CAPTURE="$TEST_TMP/cursor-hook-stop-completed.txt"
 rm -f "$TEST_HOOK_CAPTURE"

@@ -16,6 +16,13 @@ pane_id="$(resolve_agent_target_pane "$explicit_pane" "${workspace_roots[@]}")"
 
 parse_hook_result cursor "$hook_event"
 [ -n "$hook_status" ] || exit 0
+case "$hook_status" in
+  done|needs-input)
+    metadata_json="$(hook_metadata_json cursor "$hook_event")"
+    suppression="$(HOOK_METADATA_JSON="$metadata_json" bash "$SCRIPTS_DIR/features/hooks/filter-agent-event.sh")"
+    [ "$suppression" = suppress ] && exit 0
+    ;;
+esac
 
 exec "$update_helper" \
   --pane "$pane_id" \

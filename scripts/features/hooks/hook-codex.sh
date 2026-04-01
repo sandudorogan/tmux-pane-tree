@@ -15,6 +15,13 @@ fi
 
 parse_hook_result codex "$hook_event"
 [ -n "$hook_status" ] || exit 0
+case "$hook_status" in
+  done|needs-input)
+    metadata_json="$(hook_metadata_json codex "$hook_event")"
+    suppression="$(HOOK_METADATA_JSON="$metadata_json" bash "$SCRIPTS_DIR/features/hooks/filter-agent-event.sh")"
+    [ "$suppression" = suppress ] && exit 0
+    ;;
+esac
 
 exec "$update_helper" \
   --pane "${TMUX_PANE:-}" \
