@@ -71,6 +71,15 @@ printf '%s' '{"permission_mode":"delegate","summary":"Finished delegated task"}'
 assert_file_contains "$TEST_PEON_CAPTURE" 'agent-turn-complete'
 assert_file_contains "$TEST_PEON_STDIN_CAPTURE" '"permission_mode":"delegate"'
 
+export TEST_HOOK_CAPTURE="$TEST_TMP/codex-hook-delegate-start.txt"
+printf '%s' '{"session_id":"worker-9","permission_mode":"delegate","summary":"Starting delegated task"}' | bash scripts/features/hooks/hook-codex.sh task_started
+assert_file_contains "$TEST_HOOK_CAPTURE" '--status running'
+
+export TEST_HOOK_CAPTURE="$TEST_TMP/codex-hook-tracked-complete.txt"
+rm -f "$TEST_HOOK_CAPTURE"
+printf '%s' '{"session_id":"worker-9","summary":"Finished delegated task"}' | bash scripts/features/hooks/hook-codex.sh agent-turn-complete
+[ ! -f "$TEST_HOOK_CAPTURE" ] || fail "codex tracked completion should be suppressed"
+
 export TEST_HOOK_CAPTURE="$TEST_TMP/codex-hook-json-arg.txt"
 python3 - <<'PY'
 import os
