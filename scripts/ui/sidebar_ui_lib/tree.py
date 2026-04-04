@@ -4,7 +4,7 @@ import json
 import subprocess
 from collections import OrderedDict
 
-from .core import STATE_DIR, SIDEBAR_TITLES, configured_sidebar_width, run_tmux, tmux_option, tmux_option_value
+from .core import STATE_DIR, configured_sidebar_width, is_sidebar_pane, run_tmux, tmux_option, tmux_option_value
 from .status import badge_for_status, effective_pane_status, live_agent_app, normalize_token, pane_display_label, pane_icon, window_display_name
 
 
@@ -120,7 +120,7 @@ def load_tree() -> list[dict]:
             panes = [
                 pane
                 for pane in window["panes"]
-                if pane["title"] not in SIDEBAR_TITLES and pane_matches_filter(pane, pane_states.get(pane["id"], {}), filter_tokens)
+                if not is_sidebar_pane(pane["title"], pane["label"]) and pane_matches_filter(pane, pane_states.get(pane["id"], {}), filter_tokens)
             ]
             if not panes:
                 continue

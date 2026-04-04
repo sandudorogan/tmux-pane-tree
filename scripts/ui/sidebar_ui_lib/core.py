@@ -32,6 +32,7 @@ DEFAULT_SHORTCUTS = {
     "toggle_filter": "f",
 }
 SIDEBAR_TITLES = {"Sidebar", "tmux-sidebar"}
+SIDEBAR_COMMAND_RE = re.compile(r"^python(?:[0-9.]+)?$", re.IGNORECASE)
 INPUT_POLL_MS = 25
 REFRESH_INTERVAL_SECONDS = 2.0
 SHORTCUTS_CACHE_TTL_SECONDS = 30.0
@@ -153,6 +154,17 @@ def sidebar_has_focus() -> bool:
         return run_tmux("display-message", "-p", "-t", sidebar_pane, "#{pane_active}").strip() == "1"
     except subprocess.CalledProcessError:
         return False
+
+
+def is_sidebar_pane(title: str, command: str) -> bool:
+    return title in SIDEBAR_TITLES and bool(SIDEBAR_COMMAND_RE.match(normalize_command_token(command)))
+
+
+def normalize_command_token(command: str) -> str:
+    token = command.strip()
+    if "/" in token:
+        token = token.rsplit("/", 1)[-1]
+    return token
 
 
 def focus_main_pane() -> None:

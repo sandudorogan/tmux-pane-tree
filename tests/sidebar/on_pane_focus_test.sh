@@ -58,7 +58,7 @@ EOF
 
 bash scripts/features/sidebar/on-pane-focus.sh "%6" "@1"
 
-assert_file_contains "$TMUX_SIDEBAR_STATE_DIR/pane-%6.json" '"status":"idle"'
+assert_file_contains "$TMUX_SIDEBAR_STATE_DIR/pane-%6.json" '"status":"done"'
 
 fake_tmux_no_sidebar
 fake_tmux_register_pane "%90" "work" "@1" "editor" "Sidebar" "python3"

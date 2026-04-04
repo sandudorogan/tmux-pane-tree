@@ -264,7 +264,7 @@ case "$command_name" in
           ;;
       esac
     done
-    if [[ "$format" == '#{pane_id}|#{pane_title}' || "$format" == '#{pane_id}|#{pane_title}|#{window_id}' || "$format" == '#{pane_id}|#{pane_title}|#{session_name}|#{window_id}' || "$format" == '#{pane_id}|#{pane_active}' || "$format" == '#{pane_id}|#{pane_current_path}' || "$format" == '#{pane_id}|#{pane_current_path}|#{pane_active}' || "$format" == '#{pane_id}' || "$format" == '#{session_name}' ]]; then
+    if [[ "$format" == '#{pane_id}|#{pane_title}' || "$format" == '#{pane_id}|#{pane_title}|#{window_id}' || "$format" == '#{pane_id}|#{pane_title}|#{pane_current_command}|#{window_id}' || "$format" == '#{pane_id}|#{pane_title}|#{session_name}|#{window_id}' || "$format" == '#{pane_id}|#{pane_title}|#{pane_current_command}|#{session_name}|#{window_id}' || "$format" == '#{pane_id}|#{pane_active}' || "$format" == '#{pane_id}|#{pane_current_path}' || "$format" == '#{pane_id}|#{pane_current_path}|#{pane_active}' || "$format" == '#{pane_id}' || "$format" == '#{session_name}' ]]; then
       found="0"
       if [ "$format" = '#{session_name}' ]; then
         if [ -z "$target_window" ] && [ -s "$data_dir/list_panes.txt" ]; then
@@ -314,8 +314,14 @@ case "$command_name" in
           '#{pane_id}|#{pane_title}|#{window_id}')
             printf '%s|%s|%s\n' "$pane_id" "$pane_title" "$window_id"
             ;;
+          '#{pane_id}|#{pane_title}|#{pane_current_command}|#{window_id}')
+            printf '%s|%s|%s|%s\n' "$pane_id" "$pane_title" "$pane_current_command" "$window_id"
+            ;;
           '#{pane_id}|#{pane_title}|#{session_name}|#{window_id}')
             printf '%s|%s|%s|%s\n' "$pane_id" "$pane_title" "$session_name" "$window_id"
+            ;;
+          '#{pane_id}|#{pane_title}|#{pane_current_command}|#{session_name}|#{window_id}')
+            printf '%s|%s|%s|%s|%s\n' "$pane_id" "$pane_title" "$pane_current_command" "$session_name" "$window_id"
             ;;
           '#{pane_id}|#{pane_active}')
             if [ "$pane_id" = "$window_active_pane" ]; then

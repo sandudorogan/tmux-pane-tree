@@ -12,7 +12,6 @@ enabled="$(tmux show-options -gv @tmux_sidebar_enabled 2>/dev/null || printf '0\
 SCRIPT_DIR="$(CDPATH= cd -- "$(dirname "$0")" && pwd)"
 SCRIPTS_DIR="$(CDPATH= cd -- "$SCRIPT_DIR/../.." && pwd)"
 . "$SCRIPTS_DIR/core/lib.sh"
-sidebar_titles="$(sidebar_title_pattern)"
 target_pane="${1:-}"
 current_window="${2:-}"
 
@@ -48,9 +47,9 @@ trap cleanup EXIT
 stored_pane="$(tmux show-options -gv "$sidebar_pane_option" 2>/dev/null || true)"
 if [ -n "$stored_pane" ]; then
   stored_sidebar="$(
-    tmux list-panes -a -F '#{pane_id}|#{pane_title}|#{window_id}' \
-      | awk -F'|' -v target_pane="$stored_pane" -v current_window="$current_window" -v sidebar_titles="$sidebar_titles" \
-          '$1 == target_pane && $2 ~ sidebar_titles && $3 == current_window { print $1; exit }'
+    tmux list-panes -a -F '#{pane_id}|#{pane_title}|#{pane_current_command}|#{window_id}' \
+      | awk -F'|' -v target_pane="$stored_pane" -v current_window="$current_window" \
+          '$1 == target_pane && ($2 == "Sidebar" || $2 == "tmux-sidebar") && tolower($3) ~ /^python([0-9.]+)?$/ && $4 == current_window { print $1; exit }'
   )"
   if [ -n "$stored_sidebar" ]; then
     exit 0
@@ -59,9 +58,9 @@ if [ -n "$stored_pane" ]; then
 fi
 
 existing_pane="$(
-  tmux list-panes -a -F '#{pane_id}|#{pane_title}|#{window_id}' \
-    | awk -F'|' -v current_window="$current_window" -v sidebar_titles="$sidebar_titles" \
-        '$2 ~ sidebar_titles && $3 == current_window { print $1; exit }'
+  tmux list-panes -a -F '#{pane_id}|#{pane_title}|#{pane_current_command}|#{window_id}' \
+    | awk -F'|' -v current_window="$current_window" \
+        '($2 == "Sidebar" || $2 == "tmux-sidebar") && tolower($3) ~ /^python([0-9.]+)?$/ && $4 == current_window { print $1; exit }'
 )"
 if [ -n "$existing_pane" ]; then
   tmux set-option -g "$sidebar_pane_option" "$existing_pane"

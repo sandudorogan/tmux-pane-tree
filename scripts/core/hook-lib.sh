@@ -65,6 +65,12 @@ parse_hook_result() {
   hook_message="$(printf '%s\n' "$parsed" | sed '1d')"
 }
 
+hook_metadata_json() {
+  local app="$1"
+  local event="${2:-}"
+  HOOK_PAYLOAD="$hook_payload" python3 "$HOOK_LIB_DIR/hook-metadata.py" "$app" "$event"
+}
+
 cursor_hook_event() {
   HOOK_PAYLOAD="$hook_payload" python3 - <<'PY'
 from __future__ import annotations

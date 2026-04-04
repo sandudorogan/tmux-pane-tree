@@ -437,8 +437,19 @@ set -g @tmux_pane_tree_install_agent_hooks 1
 bash ~/.config/tmux/plugins/tmux-pane-tree/\
 scripts/features/hooks/install-agent-hooks.sh</code></pre>
           <p class="install-note">
-            Patches Claude Code, Codex, Cursor, and OpenCode hook configs.
-            Creates timestamped backups first.
+            Claude Code needs SessionStart, UserPromptSubmit, Stop,
+            Notification, PermissionRequest, SessionEnd, SubagentStart, and
+            SubagentStop. Cursor needs sessionStart, sessionEnd,
+            beforeSubmitPrompt, preToolUse, postToolUse, postToolUseFailure,
+            subagentStart, subagentStop, afterAgentThought, afterAgentResponse,
+            and stop.
+          </p>
+          <p class="install-note">
+            Subagent completion badges stay hidden while the main session
+            completion remains visible. Codex suppression is best-effort.
+            The installer creates timestamped backups first, then replaces the
+            single <code>notify = [...]</code> line in
+            <code>~/.codex/config.toml</code>.
           </p>
         </div>
         <p class="install-note">

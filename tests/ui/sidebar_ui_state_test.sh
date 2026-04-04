@@ -248,6 +248,40 @@ output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 assert_contains "$output" 'X codex ✅'
 
 fake_tmux_set_tree <<'EOF'
+work|@1|editor|%91|codex-aarch64-apple-darwin|tmux-sidebar|1
+EOF
+rm -f "$TMUX_SIDEBAR_STATE_DIR/pane-%91.json"
+
+output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
+
+assert_contains "$output" 'X codex'
+assert_not_contains "$output" 'Sidebar'
+
+fake_tmux_set_tree <<'EOF'
+work|@1|editor|%92|zsh|sandu@host:~/workdir/tmux-sidebar|1
+EOF
+cat > "$TMUX_SIDEBAR_STATE_DIR/pane-%92.json" <<'EOF'
+{"pane_id":"%92","app":"codex","status":"done","pane_title":"⠦ tmux-sidebar","pane_current_command":"codex-aarch64-apple-darwin","updated_at":100}
+EOF
+
+output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
+
+assert_contains "$output" 'X codex ✅'
+assert_not_contains "$output" 'zsh'
+
+fake_tmux_set_tree <<'EOF'
+work|@1|editor|%93|zsh|sandu@host:~/workdir/tmux-sidebar|1
+EOF
+cat > "$TMUX_SIDEBAR_STATE_DIR/pane-%93.json" <<'EOF'
+{"pane_id":"%93","app":"codex","status":"done","updated_at":100}
+EOF
+
+output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
+
+assert_contains "$output" 'zsh'
+assert_not_contains "$output" 'X codex ✅'
+
+fake_tmux_set_tree <<'EOF'
 work|@1|editor|%12|codex-aarch64-apple-darwin|codex --full-auto|1
 EOF
 cat > "$TMUX_SIDEBAR_STATE_DIR/pane-%12.json" <<'EOF'
@@ -258,6 +292,19 @@ output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
 assert_contains "$output" 'codex'
 assert_not_contains "$output" '⏳'
+
+fake_tmux_set_tree <<'EOF'
+work|@1|editor|%121|zsh|sandu.dorogan@host:~/workdir/tmux-sidebar|1
+EOF
+cat > "$TMUX_SIDEBAR_STATE_DIR/pane-%121.json" <<'EOF'
+{"pane_id":"%121","app":"codex","status":"idle","pane_title":"Codex task","pane_current_command":"codex-aarch64-apple-darwin","updated_at":100}
+EOF
+
+output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
+
+assert_contains "$output" 'codex'
+assert_not_contains "$output" '⏳'
+assert_not_contains "$output" 'zsh'
 
 fake_tmux_set_tree <<'EOF'
 work|@1|editor|%13|codex-aarch64-apple-darwin|● project: done|1
