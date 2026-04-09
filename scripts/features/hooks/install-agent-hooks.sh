@@ -7,9 +7,19 @@ CLAUDE_SETTINGS="${CLAUDE_SETTINGS:-$HOME/.claude/settings.json}"
 CODEX_CONFIG="${CODEX_CONFIG:-$HOME/.codex/config.toml}"
 CURSOR_HOOKS="${CURSOR_HOOKS:-$HOME/.cursor/hooks.json}"
 OPENCODE_PLUGIN="${OPENCODE_PLUGIN:-$HOME/.config/opencode/plugins/tmux-pane-tree.js}"
+PI_EXTENSION="${PI_EXTENSION:-$HOME/.pi/agent/extensions/tmux-pane-tree.ts}"
+KIRO_AGENT="${KIRO_AGENT:-$HOME/.kiro/agents/tmux-pane-tree.json}"
+KIRO_CLI_SETTINGS="${KIRO_CLI_SETTINGS:-$HOME/.kiro/settings/cli.json}"
 TIMESTAMP="${TIMESTAMP:-$(date +%Y%m%d%H%M%S)}"
 
-mkdir -p "$(dirname "$CLAUDE_SETTINGS")" "$(dirname "$CODEX_CONFIG")" "$(dirname "$CURSOR_HOOKS")" "$(dirname "$OPENCODE_PLUGIN")"
+mkdir -p \
+  "$(dirname "$CLAUDE_SETTINGS")" \
+  "$(dirname "$CODEX_CONFIG")" \
+  "$(dirname "$CURSOR_HOOKS")" \
+  "$(dirname "$OPENCODE_PLUGIN")" \
+  "$(dirname "$PI_EXTENSION")" \
+  "$(dirname "$KIRO_AGENT")" \
+  "$(dirname "$KIRO_CLI_SETTINGS")"
 
 if [ -f "$CLAUDE_SETTINGS" ]; then
   cp "$CLAUDE_SETTINGS" "$CLAUDE_SETTINGS.bak-tmux-sidebar-$TIMESTAMP"
@@ -204,3 +214,131 @@ export const TmuxSidebarPlugin = async () => {{
 """.format(hook_path=str(hook))
 )
 END_OPENCODE
+
+if [ -f "$PI_EXTENSION" ]; then
+  cp "$PI_EXTENSION" "$PI_EXTENSION.bak-tmux-sidebar-$TIMESTAMP"
+fi
+
+PI_EXTENSION="$PI_EXTENSION" PLUGIN_DST="$PLUGIN_DST" python3 - <<'END_PI'
+import os
+from pathlib import Path
+
+path = Path(os.environ["PI_EXTENSION"]).expanduser()
+plugin_dir = Path(os.environ["PLUGIN_DST"]).expanduser()
+hook = plugin_dir / "scripts/features/hooks/hook-pi.sh"
+
+path.write_text(
+    """import type {{ ExtensionAPI }} from '@mariozechner/pi-coding-agent'
+
+const hook = {hook_path!r}
+
+function pickMessage(event: unknown): string {{
+  if (!event || typeof event !== 'object') {{
+    return ''
+  }}
+
+  const record = event as Record<string, unknown>
+  for (const key of ['message', 'summary', 'prompt', 'toolName', 'tool_name']) {{
+    const value = record[key]
+    if (typeof value === 'string' && value.trim()) {{
+      return value.trim()
+    }}
+  }}
+  return ''
+}}
+
+async function emit(pi: ExtensionAPI, eventName: string, event: unknown): Promise<void> {{
+  const payload = JSON.stringify({{
+    event: eventName,
+    message: pickMessage(event),
+  }})
+  try {{
+    await pi.exec('bash', [hook, payload])
+  }} catch {{
+    // Hook failures should not break the agent session.
+  }}
+}}
+
+export default function (pi: ExtensionAPI) {{
+  pi.on('session_start', async (event) => emit(pi, 'session_start', event))
+  pi.on('session_shutdown', async (event) => emit(pi, 'session_shutdown', event))
+  pi.on('agent_start', async (event) => emit(pi, 'agent_start', event))
+  pi.on('agent_end', async (event) => emit(pi, 'agent_end', event))
+  pi.on('turn_start', async (event) => emit(pi, 'turn_start', event))
+  pi.on('tool_call', async (event) => emit(pi, 'tool_call', event))
+}}
+""".format(hook_path=str(hook))
+)
+END_PI
+
+if [ -f "$KIRO_AGENT" ]; then
+  cp "$KIRO_AGENT" "$KIRO_AGENT.bak-tmux-sidebar-$TIMESTAMP"
+fi
+
+KIRO_AGENT="$KIRO_AGENT" PLUGIN_DST="$PLUGIN_DST" python3 - <<'END_KIRO_AGENT'
+import json
+import os
+import shlex
+from pathlib import Path
+
+path = Path(os.environ["KIRO_AGENT"]).expanduser()
+plugin_dir = Path(os.environ["PLUGIN_DST"]).expanduser()
+hook = plugin_dir / "scripts/features/hooks/hook-kiro.sh"
+command_prefix = f"bash {shlex.quote(str(hook))}"
+
+data = {
+    "name": "tmux-pane-tree",
+    "description": "Update tmux-pane-tree sidebar status badges from Kiro hook events.",
+    "includeMcpJson": True,
+    "hooks": {
+        "agentSpawn": [
+            {"command": f"{command_prefix} agentSpawn"},
+        ],
+        "userPromptSubmit": [
+            {"command": f"{command_prefix} userPromptSubmit"},
+        ],
+        "preToolUse": [
+            {"matcher": "*", "command": f"{command_prefix} preToolUse"},
+        ],
+        "postToolUse": [
+            {"matcher": "*", "command": f"{command_prefix} postToolUse"},
+        ],
+        "stop": [
+            {"command": f"{command_prefix} stop"},
+        ],
+    },
+}
+
+path.write_text(json.dumps(data, indent=2) + "\n")
+END_KIRO_AGENT
+
+if [ -f "$KIRO_CLI_SETTINGS" ]; then
+  cp "$KIRO_CLI_SETTINGS" "$KIRO_CLI_SETTINGS.bak-tmux-sidebar-$TIMESTAMP"
+fi
+
+KIRO_CLI_SETTINGS="$KIRO_CLI_SETTINGS" python3 - <<'END_KIRO_SETTINGS'
+import json
+import os
+from pathlib import Path
+
+path = Path(os.environ["KIRO_CLI_SETTINGS"]).expanduser()
+text = path.read_text().strip() if path.exists() else ""
+try:
+    data = json.loads(text) if text else {}
+except Exception:
+    data = {}
+if not isinstance(data, dict):
+    data = {}
+
+chat = data.get("chat")
+if not isinstance(chat, dict):
+    chat = {}
+    data["chat"] = chat
+
+current_default = str(chat.get("defaultAgent") or "").strip()
+if current_default not in ("", "kiro_default", "default"):
+    raise SystemExit(0)
+
+chat["defaultAgent"] = "tmux-pane-tree"
+path.write_text(json.dumps(data, indent=2) + "\n")
+END_KIRO_SETTINGS

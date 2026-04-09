@@ -451,6 +451,14 @@ scripts/features/hooks/install-agent-hooks.sh</code></pre>
             single <code>notify = [...]</code> line in
             <code>~/.codex/config.toml</code>.
           </p>
+          <p class="install-note">
+            Pi is installed as an auto-discovered extension at
+            <code>~/.pi/agent/extensions/tmux-pane-tree.ts</code>. Kiro is
+            installed as a global agent at
+            <code>~/.kiro/agents/tmux-pane-tree.json</code>, and the installer
+            only updates <code>chat.defaultAgent</code> when it is unset or
+            still <code>kiro_default</code>.
+          </p>
         </div>
         <p class="install-note">
           Requires <strong>tmux 3.0+</strong>, <strong>Python 3</strong>, and

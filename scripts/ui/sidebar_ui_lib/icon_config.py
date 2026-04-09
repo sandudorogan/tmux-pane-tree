@@ -18,6 +18,8 @@ ASCII_ICONS: dict[str, str] = {
     "codex": "X",
     "opencode": "O",
     "cursor": "U",
+    "pi": "π",
+    "kiro": "K",
     "shell": "$",
     "node": "N",
     "python": "P",
@@ -42,6 +44,8 @@ UNICODE_ICONS: dict[str, str] = {
     "codex": "⌘",
     "opencode": "◌",
     "cursor": "▣",
+    "pi": "π",
+    "kiro": "◆",
     "shell": "›",
     "node": "⬢",
     "python": "¶",
@@ -66,6 +70,8 @@ NERD_FONT_ICONS: dict[str, str] = {
     "codex": "\U000f0d70",
     "opencode": "\U000f0d70",
     "cursor": "\U000f0d70",
+    "pi": "\U000f0d70",
+    "kiro": "\U000f0d70",
     "shell": "\U000f016c",
     "node": "\ue719",
     "python": "\ue73c",
@@ -133,6 +139,9 @@ APP_ALIASES: dict[str, str] = {
     "htop": "top",
     "top": "top",
     "tmux": "tmux",
+    "pi": "pi",
+    "kiro-cli": "kiro",
+    "kiro": "kiro",
 }
 FONT_DIRS_ENV = "TMUX_PANE_TREE_FONT_DIRS"
 LEGACY_FONT_DIRS_ENV = "TMUX_SIDEBAR_FONT_DIRS"

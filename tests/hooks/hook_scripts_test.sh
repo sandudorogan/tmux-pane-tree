@@ -176,6 +176,31 @@ export TEST_HOOK_CAPTURE="$TEST_TMP/opencode-hook-session-idle.txt"
 printf '%s' '{"event":"session.idle","message":"Ready"}' | bash scripts/features/hooks/hook-opencode.sh
 assert_file_contains "$TEST_HOOK_CAPTURE" '--status done'
 
+export TEST_HOOK_CAPTURE="$TEST_TMP/pi-hook.txt"
+printf '%s' '{"event":"agent_start","message":"Working"}' | bash scripts/features/hooks/hook-pi.sh
+assert_file_contains "$TEST_HOOK_CAPTURE" '--app pi'
+assert_file_contains "$TEST_HOOK_CAPTURE" '--status running'
+assert_file_contains "$TEST_HOOK_CAPTURE" '--message Working'
+
+export TEST_HOOK_CAPTURE="$TEST_TMP/pi-hook-needs-input.txt"
+printf '%s' '{"event":"needs_input","message":"Need approval"}' | bash scripts/features/hooks/hook-pi.sh
+assert_file_contains "$TEST_HOOK_CAPTURE" '--status needs-input'
+
+export TEST_HOOK_CAPTURE="$TEST_TMP/kiro-hook.txt"
+printf '%s' '{"hook_event_name":"stop","message":"Finished"}' | bash scripts/features/hooks/hook-kiro.sh
+assert_file_contains "$TEST_HOOK_CAPTURE" '--app kiro'
+assert_file_contains "$TEST_HOOK_CAPTURE" '--status done'
+assert_file_contains "$TEST_HOOK_CAPTURE" '--message Finished'
+
+export TEST_HOOK_CAPTURE="$TEST_TMP/kiro-hook-running.txt"
+printf '%s' '{"hook_event_name":"preToolUse","tool_name":"write"}' | bash scripts/features/hooks/hook-kiro.sh
+assert_file_contains "$TEST_HOOK_CAPTURE" '--status running'
+assert_file_contains "$TEST_HOOK_CAPTURE" '--message write'
+
+export TEST_HOOK_CAPTURE="$TEST_TMP/kiro-hook-idle.txt"
+printf '%s' '{"hook_event_name":"agentSpawn"}' | bash scripts/features/hooks/hook-kiro.sh
+assert_file_contains "$TEST_HOOK_CAPTURE" '--status idle'
+
 export TEST_HOOK_CAPTURE="$TEST_TMP/cursor-hook-session-start.txt"
 rm -f "$TEST_HOOK_CAPTURE"
 printf '%s' '{"hook_event_name":"sessionStart","workspace_roots":["/work/project"],"agent_message":"Ready"}' | bash scripts/features/hooks/hook-cursor.sh || true

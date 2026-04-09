@@ -31,9 +31,13 @@ sidebar_creating_option="$(sidebar_window_option "creating" "$current_window")"
 sidebar_focus_option="$(sidebar_focus_request_option "$current_window")"
 ensure_lock="@tmux_sidebar_ensure_$(window_key_for_id "$current_window")"
 
-lockfile="/tmp/tmux-sidebar-ensure-$(window_key_for_id "$current_window").lock"
-exec 9>"$lockfile"
-flock -n 9 || exit 0
+# `tmux wait-for -L` below provides the cross-platform lock. Use `flock`
+# opportunistically when available, but do not require it on systems like macOS.
+if command -v flock >/dev/null 2>&1; then
+  lockfile="/tmp/tmux-sidebar-ensure-$(window_key_for_id "$current_window").lock"
+  exec 9>"$lockfile"
+  flock -n 9 || exit 0
+fi
 
 tmux wait-for -L "$ensure_lock"
 
