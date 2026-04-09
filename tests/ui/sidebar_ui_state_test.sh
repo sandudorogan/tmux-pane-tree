@@ -487,6 +487,25 @@ export TMUX_SIDEBAR_WIDTH=''
 
 rm -f "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_width.txt"
 rm -f "$TEST_TMUX_DATA_DIR/option__tmux_pane_tree_width.txt"
+mkdir -p "$TMUX_SIDEBAR_STATE_DIR"
+printf '37\n' > "$TMUX_SIDEBAR_STATE_DIR/sidebar-width.txt"
+python_width="$(
+python3 - <<'PY'
+import importlib.util
+from pathlib import Path
+
+spec = importlib.util.spec_from_file_location("sidebar_ui", Path("scripts/ui/sidebar-ui.py"))
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+print(module.configured_sidebar_width())
+PY
+)"
+
+assert_eq "$python_width" "37"
+rm -f "$TMUX_SIDEBAR_STATE_DIR/sidebar-width.txt"
+
+rm -f "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_width.txt"
+rm -f "$TEST_TMUX_DATA_DIR/option__tmux_pane_tree_width.txt"
 rm -f "$TEST_TMUX_DATA_DIR/option__tmux_pane_tree_session_order.txt"
 printf 'legacy-width\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_width.txt"
 printf 'new-width\n' > "$TEST_TMUX_DATA_DIR/option__tmux_pane_tree_width.txt"

@@ -91,6 +91,19 @@ def tmux_option(option_name: str) -> str:
         return ""
 
 
+def persisted_sidebar_width() -> int | None:
+    path = STATE_DIR / "sidebar-width.txt"
+    try:
+        raw_width = path.read_text().strip()
+    except OSError:
+        return None
+    try:
+        width = int(raw_width)
+    except (TypeError, ValueError):
+        return None
+    return width if width > 0 else None
+
+
 def configured_scrolloff() -> int:
     raw = tmux_option_value("scrolloff")
     if raw:
@@ -112,6 +125,9 @@ def configured_sidebar_width() -> int:
             width = 0
         if width > 0:
             return width
+    persisted_width = persisted_sidebar_width()
+    if persisted_width is not None:
+        return persisted_width
     return DEFAULT_SIDEBAR_WIDTH
 
 

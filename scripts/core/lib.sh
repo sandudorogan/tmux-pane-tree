@@ -30,6 +30,55 @@ set_pane_tree_option() {
   tmux set-option -g "$(pane_tree_option_name "$suffix")" "$value"
 }
 
+sidebar_width_state_file() {
+  local state_dir
+  state_dir="$(print_state_dir)"
+  printf '%s/%s\n' "$state_dir" "sidebar-width.txt"
+}
+
+read_persisted_sidebar_width() {
+  local state_file value
+  state_file="$(sidebar_width_state_file)"
+  [ -f "$state_file" ] || return 0
+
+  value="$(cat "$state_file" 2>/dev/null || true)"
+  if [[ "$value" =~ ^[1-9][0-9]*$ ]]; then
+    printf '%s\n' "$value"
+  fi
+}
+
+write_persisted_sidebar_width() {
+  local value="${1:-}"
+  local state_dir state_file tmp_file
+
+  [[ "$value" =~ ^[1-9][0-9]*$ ]] || return 1
+
+  state_dir="$(print_state_dir)"
+  mkdir -p "$state_dir"
+  state_file="$(sidebar_width_state_file)"
+  tmp_file="$(mktemp "$state_dir/.sidebar-width.XXXXXX")"
+  printf '%s\n' "$value" > "$tmp_file"
+  mv "$tmp_file" "$state_file"
+}
+
+configured_sidebar_width() {
+  local value
+
+  value="$(get_pane_tree_option width)"
+  if [[ "$value" =~ ^[1-9][0-9]*$ ]]; then
+    printf '%s\n' "$value"
+    return 0
+  fi
+
+  value="$(read_persisted_sidebar_width)"
+  if [[ "$value" =~ ^[1-9][0-9]*$ ]]; then
+    printf '%s\n' "$value"
+    return 0
+  fi
+
+  printf '%s\n' "25"
+}
+
 pane_tree_plugin_dir() {
   local fallback="${1:-}"
   if [ -n "${TMUX_PANE_TREE_PLUGIN_DIR:-}" ]; then
@@ -291,6 +340,38 @@ list_sidebar_panes_in_session() {
   tmux list-panes -a -F '#{pane_id}|#{pane_title}|#{pane_current_command}|#{session_name}|#{window_id}' \
     | awk -F'|' -v target_session="$session_name" \
         '(($2 == "Sidebar" || $2 == "tmux-sidebar") && tolower($3) ~ /^python([0-9.]+)?$/) && $4 == target_session { print $1 "|" $5 }'
+}
+
+sync_sidebar_width_from_pane() {
+  local pane_id="${1:-}"
+  local pane_details pane_title pane_command pane_width sidebar_entry sidebar_id current_width
+
+  [ -n "$pane_id" ] || return 0
+
+  pane_details="$(tmux display-message -p -t "$pane_id" '#{pane_title}|#{pane_current_command}|#{pane_width}' 2>/dev/null || true)"
+  [ -n "$pane_details" ] || return 0
+
+  IFS='|' read -r pane_title pane_command pane_width <<EOF
+$pane_details
+EOF
+
+  is_sidebar_pane "$pane_title" "$pane_command" || return 0
+  [[ "$pane_width" =~ ^[1-9][0-9]*$ ]] || return 0
+
+  set_pane_tree_option width "$pane_width"
+  write_persisted_sidebar_width "$pane_width" || true
+
+  while IFS='|' read -r sidebar_id _; do
+    [ -n "$sidebar_id" ] || continue
+    [ "$sidebar_id" = "$pane_id" ] && continue
+
+    current_width="$(tmux display-message -p -t "$sidebar_id" '#{pane_width}' 2>/dev/null || true)"
+    if [ "$current_width" != "$pane_width" ]; then
+      tmux resize-pane -t "$sidebar_id" -x "$pane_width" 2>/dev/null || true
+    fi
+  done <<EOF
+$(list_sidebar_panes)
+EOF
 }
 
 clear_sidebar_state_options() {
