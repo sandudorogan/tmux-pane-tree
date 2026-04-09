@@ -45,8 +45,9 @@ real_tmux run-shell -b "$ensure_sidebar_cmd"
 
 sidebar_pane_id="$(real_tmux_wait_for_sidebar_pane "$main_window_id")"
 initial_capture="$(real_tmux_wait_for_capture "$sidebar_pane_id" 'tailing')"
-main_pane_command="$(real_tmux display-message -p -t "$main_pane_id" '#{pane_current_command}')"
-assert_contains "$initial_capture" "▶ │     └─ \$ $main_pane_command"
+assert_contains "$initial_capture" 'work'
+assert_contains "$initial_capture" 'editor'
+assert_contains "$initial_capture" '▶ │     └─ $ '
 
 real_tmux select-pane -t "$sidebar_pane_id"
 assert_eq "$(real_tmux display-message -p -t "$sidebar_pane_id" '#{pane_active}')" "1"

@@ -187,10 +187,19 @@ printf '%s' '{"event":"needs_input","message":"Need approval"}' | bash scripts/f
 assert_file_contains "$TEST_HOOK_CAPTURE" '--status needs-input'
 
 export TEST_HOOK_CAPTURE="$TEST_TMP/kiro-hook.txt"
-printf '%s' '{"event":"agent_end","message":"Finished"}' | bash scripts/features/hooks/hook-kiro.sh
+printf '%s' '{"hook_event_name":"stop","message":"Finished"}' | bash scripts/features/hooks/hook-kiro.sh
 assert_file_contains "$TEST_HOOK_CAPTURE" '--app kiro'
 assert_file_contains "$TEST_HOOK_CAPTURE" '--status done'
 assert_file_contains "$TEST_HOOK_CAPTURE" '--message Finished'
+
+export TEST_HOOK_CAPTURE="$TEST_TMP/kiro-hook-running.txt"
+printf '%s' '{"hook_event_name":"preToolUse","tool_name":"write"}' | bash scripts/features/hooks/hook-kiro.sh
+assert_file_contains "$TEST_HOOK_CAPTURE" '--status running'
+assert_file_contains "$TEST_HOOK_CAPTURE" '--message write'
+
+export TEST_HOOK_CAPTURE="$TEST_TMP/kiro-hook-idle.txt"
+printf '%s' '{"hook_event_name":"agentSpawn"}' | bash scripts/features/hooks/hook-kiro.sh
+assert_file_contains "$TEST_HOOK_CAPTURE" '--status idle'
 
 export TEST_HOOK_CAPTURE="$TEST_TMP/cursor-hook-session-start.txt"
 rm -f "$TEST_HOOK_CAPTURE"

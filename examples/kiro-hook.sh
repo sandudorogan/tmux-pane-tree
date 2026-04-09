@@ -8,16 +8,22 @@ SCRIPT_DIR="$(CDPATH= cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGIN_DIR="$(pane_tree_plugin_dir "$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)")"
 export KIRO_EVENT="${KIRO_EVENT:-}"
 export KIRO_MESSAGE="${KIRO_MESSAGE:-}"
+export KIRO_TOOL_NAME="${KIRO_TOOL_NAME:-}"
 
 payload="$(
   python3 - <<'PY'
 import json
 import os
 
-print(json.dumps({
-    "event": os.environ.get("KIRO_EVENT", ""),
+payload = {
+    "hook_event_name": os.environ.get("KIRO_EVENT", ""),
     "message": os.environ.get("KIRO_MESSAGE", ""),
-}, separators=(",", ":")))
+}
+tool_name = os.environ.get("KIRO_TOOL_NAME", "")
+if tool_name:
+    payload["tool_name"] = tool_name
+
+print(json.dumps(payload, separators=(",", ":")))
 PY
 )"
 

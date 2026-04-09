@@ -227,6 +227,48 @@ def parse_pi(event: str, payload: str) -> tuple[str, str]:
     return status, message
 
 
+def parse_kiro(event: str, payload: str) -> tuple[str, str]:
+    data = load_payload(payload)
+    raw_event = str(
+        event
+        or data.get("hook_event_name")
+        or data.get("event")
+        or ""
+    ).strip()
+    normalized = raw_event.lower().replace("_", "").replace("-", "")
+    status_hint = str(data.get("status") or data.get("state") or "").strip().lower()
+    message = str(
+        data.get("message")
+        or data.get("summary")
+        or data.get("tool_name")
+        or data.get("toolName")
+        or data.get("prompt")
+        or ""
+    ).strip()
+
+    if status_hint == "error" or normalized == "error":
+        status = "error"
+    elif normalized in ("agentspawn", "sessionstart", "sessionshutdown"):
+        status = "idle"
+    elif normalized in (
+        "userpromptsubmit",
+        "pretooluse",
+        "posttooluse",
+        "agentstart",
+        "turnstart",
+        "toolcall",
+    ):
+        status = "running"
+    elif normalized in ("stop", "agentend", "turnend"):
+        status = "done"
+    elif normalized == "needsinput":
+        status = "needs-input"
+    else:
+        status = ""
+
+    return status, message
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("app", choices=("claude", "codex", "opencode", "cursor", "pi", "kiro"))
@@ -243,7 +285,7 @@ def main() -> None:
     elif args.app == "pi":
         status, message = parse_pi(args.event, payload)
     elif args.app == "kiro":
-        status, message = parse_pi(args.event, payload)
+        status, message = parse_kiro(args.event, payload)
     else:
         status, message = parse_opencode(args.event, payload)
     write_result(status, message)

@@ -89,10 +89,10 @@ assert_eq "$(cat "$TEST_HOOK_ARGV_CAPTURE")" ""
 
 export TEST_HOOK_ARGV_CAPTURE="$TEST_TMP/kiro-argv.txt"
 export TEST_HOOK_STDIN_CAPTURE="$TEST_TMP/kiro-stdin.json"
-export KIRO_EVENT="agent_end"
+export KIRO_EVENT="stop"
 export KIRO_MESSAGE="Finished"
 bash examples/kiro-hook.sh
-assert_file_contains "$TEST_HOOK_STDIN_CAPTURE" '"event":"agent_end"'
+assert_file_contains "$TEST_HOOK_STDIN_CAPTURE" '"hook_event_name":"stop"'
 assert_file_contains "$TEST_HOOK_STDIN_CAPTURE" '"message":"Finished"'
 assert_eq "$(cat "$TEST_HOOK_ARGV_CAPTURE")" ""
 
@@ -214,7 +214,7 @@ export TEST_HOOK_STDIN_CAPTURE="$TEST_TMP/kiro-relative-stdin.json"
 export KIRO_EVENT="relative-kiro"
 export KIRO_MESSAGE="From script path"
 HOME="$TEST_TMP/fallback-home" bash "$relative_plugin_dir/examples/kiro-hook.sh"
-assert_file_contains "$TEST_HOOK_STDIN_CAPTURE" '"event":"relative-kiro"'
+assert_file_contains "$TEST_HOOK_STDIN_CAPTURE" '"hook_event_name":"relative-kiro"'
 assert_file_contains "$TEST_HOOK_STDIN_CAPTURE" '"message":"From script path"'
 assert_eq "$(cat "$TEST_HOOK_ARGV_CAPTURE")" ""
 

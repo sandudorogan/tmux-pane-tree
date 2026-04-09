@@ -77,7 +77,7 @@ source-file ~/.config/tmux/plugins/tmux-pane-tree/tmux-pane-tree.tmux
 
 Then `tmux source-file ~/.tmux.conf` (or your main config path).
 
-To patch Claude Code, Codex, Cursor, and OpenCode hook config after a manual install:
+To patch Claude Code, Codex, Cursor, OpenCode, Pi, and Kiro hook config after a manual install:
 
 ```bash
 bash ~/.config/tmux/plugins/tmux-pane-tree/scripts/features/hooks/install-agent-hooks.sh
@@ -395,13 +395,15 @@ The installer updates:
 - `~/.codex/config.toml`
 - `~/.cursor/hooks.json`
 - `~/.config/opencode/plugins/tmux-pane-tree.js`
+- `~/.pi/agent/extensions/tmux-pane-tree.ts`
+- `~/.kiro/agents/tmux-pane-tree.json`
+- `~/.kiro/settings/cli.json`
 
 It creates timestamped backups before changing existing files, then replaces
 the single `notify = [...]` line in `~/.codex/config.toml` with the
-tmux-pane-tree Codex hook wrapper.
-
-Pi and Kiro do not currently have a built-in config patcher here; wire them
-manually with the wrapper scripts below.
+tmux-pane-tree Codex hook wrapper. For Kiro, it only rewrites
+`chat.defaultAgent` when it is missing or still `kiro_default`, so existing
+custom default agents stay intact.
 
 ### Manual wiring
 
@@ -417,7 +419,8 @@ wrappers under `scripts/features/hooks/`:
 
 For Claude Code and Cursor, make sure you register the lifecycle events listed
 above so subagent suppression can distinguish delegate work from the parent
-session.
+session. Pi and Kiro examples remain useful if you want custom locations or
+non-default wiring instead of the built-in installer targets.
 
 Ready-to-copy examples live in `examples/` (set `TMUX_PANE_TREE_PLUGIN_DIR` if
 the plugin is not under the default path).
