@@ -2,6 +2,14 @@
 
 All notable project versions are documented here.
 
+## 0.3.2
+
+- Added built-in Pi and Kiro hook installers, example hook scripts, parser support, and sidebar icons/status badges.
+- Documented the Pi and Kiro hook setup and expanded runtime coverage for the new examples and installers.
+- Persisted sidebar width across sessions so reopened sidebars keep the user-selected width.
+- Fixed a recursive sidebar spawning race when pane selection re-entered sidebar creation.
+- Release commit `fa24093`.
+
 ## 0.3.1
 
 - Follow-up fixes for the subagent detection and suppression work.
