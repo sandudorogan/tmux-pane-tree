@@ -31,6 +31,10 @@ sidebar_creating_option="$(sidebar_window_option "creating" "$current_window")"
 sidebar_focus_option="$(sidebar_focus_request_option "$current_window")"
 ensure_lock="@tmux_sidebar_ensure_$(window_key_for_id "$current_window")"
 
+lockfile="/tmp/tmux-sidebar-ensure-$(window_key_for_id "$current_window").lock"
+exec 9>"$lockfile"
+flock -n 9 || exit 0
+
 tmux wait-for -L "$ensure_lock"
 
 cleanup() {
@@ -89,9 +93,9 @@ if [ -n "$current_pane" ]; then
   split_window_args=(-t "$current_pane" "${split_window_args[@]}")
 fi
 sidebar_pane="$(tmux split-window "${split_window_args[@]}" "$sidebar_command")"
+tmux set-option -g "$sidebar_pane_option" "$sidebar_pane"
 tmux set-option -p -t "$sidebar_pane" allow-set-title off 2>/dev/null || true
 tmux select-pane -t "$sidebar_pane" -T "$(sidebar_pane_title)"
-tmux set-option -g "$sidebar_pane_option" "$sidebar_pane"
 if [ "$focus_sidebar" = "1" ]; then
   tmux select-pane -t "$sidebar_pane"
 elif [ -n "$current_pane" ]; then
