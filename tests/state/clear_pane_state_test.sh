@@ -28,7 +28,7 @@ EOF
 
 bash scripts/features/state/clear-pane-state.sh "%9"
 
-assert_file_contains "$TMUX_SIDEBAR_STATE_DIR/pane-%9.json" '"status":"idle"'
+assert_file_contains "$TMUX_SIDEBAR_STATE_DIR/pane-%9.json" '"status":"done"'
 
 cat > "$TMUX_SIDEBAR_STATE_DIR/pane-%10.json" <<'EOF'
 {"pane_id":"%10","app":"codex","status":"running","updated_at":100}

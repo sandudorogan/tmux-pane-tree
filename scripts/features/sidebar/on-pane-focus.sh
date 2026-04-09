@@ -12,7 +12,8 @@ enabled="$(tmux show-options -gv @tmux_sidebar_enabled 2>/dev/null || printf '0\
 
 if [ -n "$pane_id" ]; then
   pane_title="$(tmux display-message -p -t "$pane_id" '#{pane_title}' 2>/dev/null || true)"
-  if ! printf '%s\n' "$pane_title" | grep -Eq "$(sidebar_title_pattern)"; then
+  pane_command="$(tmux display-message -p -t "$pane_id" '#{pane_current_command}' 2>/dev/null || true)"
+  if ! is_sidebar_pane "$pane_title" "$pane_command"; then
     tmux set-option -g @tmux_sidebar_main_pane "$pane_id"
   fi
 

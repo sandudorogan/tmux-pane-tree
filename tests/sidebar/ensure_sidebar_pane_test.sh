@@ -58,6 +58,15 @@ bash scripts/features/sidebar/ensure-sidebar-pane.sh
 assert_file_not_contains "$TEST_TMUX_DATA_DIR/commands.log" 'split-window -h -b -d -f -l 25'
 
 fake_tmux_no_sidebar
+fake_tmux_register_pane "%17" "work" "@1" "editor" "tmux-sidebar" "codex-aarch64-apple-darwin"
+printf '1\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_enabled.txt"
+printf '%%17\n' > "$TEST_TMUX_DATA_DIR/current_pane.txt"
+
+bash scripts/features/sidebar/ensure-sidebar-pane.sh
+
+assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'split-window -t %17 -h -b -d -f -l 25'
+
+fake_tmux_no_sidebar
 fake_tmux_register_pane "%1" "work" "@1" "editor" "nvim"
 printf '1\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_enabled.txt"
 printf '%%90\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_pane_w1.txt"
@@ -131,3 +140,14 @@ printf '28\n' > "$TEST_TMUX_DATA_DIR/option__tmux_pane_tree_width.txt"
 bash scripts/features/sidebar/ensure-sidebar-pane.sh
 
 assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'split-window -t %1 -h -b -d -f -l 28'
+
+fake_tmux_no_sidebar
+export TMUX_PANE_TREE_STATE_DIR="$TEST_TMP/state"
+mkdir -p "$TMUX_PANE_TREE_STATE_DIR"
+printf '33\n' > "$TMUX_PANE_TREE_STATE_DIR/sidebar-width.txt"
+fake_tmux_register_pane "%1" "work" "@1" "editor" "nvim"
+printf '1\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_enabled.txt"
+
+bash scripts/features/sidebar/ensure-sidebar-pane.sh
+
+assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'split-window -t %1 -h -b -d -f -l 33'

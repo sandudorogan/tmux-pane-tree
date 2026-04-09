@@ -29,11 +29,15 @@ def parse_claude(payload: str) -> tuple[str, str]:
         status = "idle"
     elif event == "UserPromptSubmit":
         status = "running"
+    elif event == "SubagentStart":
+        status = "running"
+    elif event == "SubagentStop":
+        status = "done"
     elif event == "Notification" and notification_type == "idle_prompt":
         status = "idle"
     elif event in ("Notification", "PermissionRequest"):
         status = "needs-input"
-    elif event in ("Stop", "SubagentStop"):
+    elif event == "Stop":
         status = "done"
     elif event == "PostToolUseFailure":
         status = "error"
@@ -89,7 +93,9 @@ def parse_codex(event: str, payload: str) -> tuple[str, str]:
         "turn-started",
     }
 
-    if raw_event in done_events or status_hint in done_statuses:
+    if notif_type == "permission_prompt":
+        status = "needs-input"
+    elif raw_event in done_events or status_hint in done_statuses:
         status = "done"
     elif raw_event in idle_events:
         status = "idle"
@@ -99,7 +105,6 @@ def parse_codex(event: str, payload: str) -> tuple[str, str]:
         raw_event.startswith("permission")
         or raw_event.startswith("approve")
         or raw_event in ("approval-requested", "approval-needed", "input-required")
-        or notif_type == "permission_prompt"
     ):
         status = "needs-input"
     elif raw_event.startswith("error") or raw_event.startswith("fail"):

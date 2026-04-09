@@ -63,3 +63,15 @@ run_script scripts/core/lib.sh print_state_dir
 assert_eq "$output" "$HOME/.local/state/tmux-sidebar"
 
 unset XDG_STATE_HOME
+
+export TMUX_PANE_TREE_STATE_DIR="$TEST_TMP/state"
+mkdir -p "$TMUX_PANE_TREE_STATE_DIR"
+
+run_script scripts/core/lib.sh read_persisted_sidebar_width
+assert_eq "$output" ""
+
+run_script scripts/core/lib.sh write_persisted_sidebar_width 37
+assert_eq "$(cat "$TMUX_PANE_TREE_STATE_DIR/sidebar-width.txt")" "37"
+
+run_script scripts/core/lib.sh read_persisted_sidebar_width
+assert_eq "$output" "37"

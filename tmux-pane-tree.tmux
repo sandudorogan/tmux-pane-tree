@@ -15,7 +15,7 @@ set-hook -g "session-window-changed[205]" "run-shell -b '#{@tmux_sidebar_dir}/sc
 set-hook -g "after-split-window[206]" "run-shell -b '#{@tmux_sidebar_dir}/scripts/features/sidebar/notify-sidebar.sh'"
 set-hook -g "after-new-window[207]" "run-shell -b '#{@tmux_sidebar_dir}/scripts/features/sidebar/ensure-sidebar-pane.sh #{hook_pane} #{hook_window}'"
 set-hook -g "after-kill-pane[208]" "run-shell -b '#{@tmux_sidebar_dir}/scripts/features/sidebar/handle-pane-exited.sh #{hook_pane} #{hook_window}'"
-set-hook -g "after-resize-pane[209]" "run-shell -b '#{@tmux_sidebar_dir}/scripts/features/sidebar/notify-sidebar.sh'"
+set-hook -g "after-resize-pane[209]" "run-shell -b '#{@tmux_sidebar_dir}/scripts/features/sidebar/notify-sidebar.sh #{hook_pane}'"
 set-hook -g "after-rename-window[210]" "run-shell -b '#{@tmux_sidebar_dir}/scripts/features/sidebar/notify-sidebar.sh'"
 set-hook -g "after-rename-session[211]" "run-shell -b '#{@tmux_sidebar_dir}/scripts/features/sidebar/notify-sidebar.sh'"
 run-shell -b "#{@tmux_sidebar_dir}/scripts/features/sidebar/apply-key-overrides.sh"

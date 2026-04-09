@@ -193,13 +193,21 @@ def should_preserve_live_label(command: str, title: str) -> bool:
 def state_agent_app(command: str, title: str, state: dict | None) -> str:
     app = str((state or {}).get("app", "")).strip().lower()
     status = str((state or {}).get("status", "")).strip().lower()
+    state_command = str((state or {}).get("pane_current_command", ""))
+    state_title = str((state or {}).get("pane_title", ""))
     if app not in ("claude", "codex", "opencode", "cursor", "pi", "kiro"):
         return ""
     if app == "cursor":
         if status and status != "idle":
             return "cursor"
         return ""
+    state_matches_codex = looks_like_codex(state_command) or looks_like_codex(state_title)
+    if app == "codex" and status == "idle":
+        if state_matches_codex:
+            return "codex"
     if should_preserve_live_label(command, title):
+        if app == "codex" and status in ("done", "needs-input", "error") and state_matches_codex:
+            return app
         return ""
     if app == "claude" and (looks_like_semver(command) or looks_like_semver(title)):
         return "claude"

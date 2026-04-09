@@ -41,7 +41,7 @@ Press `Enter` to jump to the selected pane.
 | `✅`  | done        | Finished                       |
 | `❌`  | error       | Something went wrong           |
 
-`done` and `needs-input` clear when you focus the pane.
+`needs-input` clears when you focus the pane. Finished panes keep their `done` state.
 
 **Auto-mirroring** — open the sidebar once and it follows you across windows.
 
@@ -362,6 +362,24 @@ Agent badges are written through
 Custom integrations should report the current pane, usually via
 `--pane "$TMUX_PANE"`.
 
+The sidebar suppresses subagent completion badges so only the main session's
+final completion is shown.
+
+Claude Code needs explicit lifecycle hooks for `SessionStart`,
+`UserPromptSubmit`, `Stop`, `Notification`, `PermissionRequest`,
+`SessionEnd`, `SubagentStart`, and `SubagentStop`.
+
+Cursor needs explicit lifecycle hooks for `sessionStart`, `sessionEnd`,
+`beforeSubmitPrompt`, `preToolUse`, `postToolUse`, `postToolUseFailure`,
+`subagentStart`, `subagentStop`, `afterAgentThought`, `afterAgentResponse`,
+and `stop`.
+
+Codex suppression is best-effort: `permission_mode` tagging can suppress
+immediate delegate completions, and `session_id` enables later follow-up
+correlation for the same delegate session. If Codex omits those delegate
+markers, tmux-pane-tree keeps the completion badge because there is no
+stronger signal to suppress it.
+
 ### Quick setup
 
 Choose one setup path:
@@ -378,7 +396,9 @@ The installer updates:
 - `~/.cursor/hooks.json`
 - `~/.config/opencode/plugins/tmux-pane-tree.js`
 
-It also creates timestamped backups before changing existing files.
+It creates timestamped backups before changing existing files, then replaces
+the single `notify = [...]` line in `~/.codex/config.toml` with the
+tmux-pane-tree Codex hook wrapper.
 
 ### Manual wiring
 
@@ -389,6 +409,10 @@ wrappers under `scripts/features/hooks/`:
 - Codex: `hook-codex.sh`
 - Cursor: `hook-cursor.sh`
 - OpenCode: `hook-opencode.sh`
+
+For Claude Code and Cursor, make sure you register the lifecycle events listed
+above so subagent suppression can distinguish delegate work from the parent
+session.
 
 Ready-to-copy examples live in `examples/` (set `TMUX_PANE_TREE_PLUGIN_DIR` if
 the plugin is not under the default path).

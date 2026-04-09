@@ -30,6 +30,55 @@ set_pane_tree_option() {
   tmux set-option -g "$(pane_tree_option_name "$suffix")" "$value"
 }
 
+sidebar_width_state_file() {
+  local state_dir
+  state_dir="$(print_state_dir)"
+  printf '%s/%s\n' "$state_dir" "sidebar-width.txt"
+}
+
+read_persisted_sidebar_width() {
+  local state_file value
+  state_file="$(sidebar_width_state_file)"
+  [ -f "$state_file" ] || return 0
+
+  value="$(cat "$state_file" 2>/dev/null || true)"
+  if [[ "$value" =~ ^[1-9][0-9]*$ ]]; then
+    printf '%s\n' "$value"
+  fi
+}
+
+write_persisted_sidebar_width() {
+  local value="${1:-}"
+  local state_dir state_file tmp_file
+
+  [[ "$value" =~ ^[1-9][0-9]*$ ]] || return 1
+
+  state_dir="$(print_state_dir)"
+  mkdir -p "$state_dir"
+  state_file="$(sidebar_width_state_file)"
+  tmp_file="$(mktemp "$state_dir/.sidebar-width.XXXXXX")"
+  printf '%s\n' "$value" > "$tmp_file"
+  mv "$tmp_file" "$state_file"
+}
+
+configured_sidebar_width() {
+  local value
+
+  value="$(get_pane_tree_option width)"
+  if [[ "$value" =~ ^[1-9][0-9]*$ ]]; then
+    printf '%s\n' "$value"
+    return 0
+  fi
+
+  value="$(read_persisted_sidebar_width)"
+  if [[ "$value" =~ ^[1-9][0-9]*$ ]]; then
+    printf '%s\n' "$value"
+    return 0
+  fi
+
+  printf '%s\n' "25"
+}
+
 pane_tree_plugin_dir() {
   local fallback="${1:-}"
   if [ -n "${TMUX_PANE_TREE_PLUGIN_DIR:-}" ]; then
@@ -57,6 +106,12 @@ print_state_dir() {
   printf '%s\n' "${XDG_STATE_HOME:-$HOME/.local/state}/tmux-sidebar"
 }
 
+hook_session_state_file() {
+  local state_dir
+  state_dir="$(print_state_dir)"
+  printf '%s/%s\n' "$state_dir" "agent-hook-state.json"
+}
+
 sidebar_pane_title() {
   printf '%s\n' 'Sidebar'
 }
@@ -74,6 +129,22 @@ is_sidebar_pane_title() {
   local sidebar_titles
   sidebar_titles="$(sidebar_title_pattern)"
   [[ "$title" =~ $sidebar_titles ]]
+}
+
+is_sidebar_pane_command() {
+  local command="${1:-}"
+  command="$(printf '%s' "$command" | tr '[:upper:]' '[:lower:]')"
+  case "$command" in
+    python|python[0-9]*|python[0-9]*.[0-9]*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+is_sidebar_pane() {
+  local title="${1:-}"
+  local command="${2:-}"
+  is_sidebar_pane_title "$title" || return 1
+  is_sidebar_pane_command "$command"
 }
 
 sidebar_pane_border_format() {
@@ -195,7 +266,7 @@ clear_terminal_pane_state() {
   local status state_dir tmp_file
   status="$(json_get_string "$state_file" "status")"
   case "$status" in
-    needs-input|done)
+    needs-input)
       state_dir="$(dirname "$state_file")"
       tmp_file="$(mktemp "$state_dir/.pane-state.XXXXXX")"
       sed 's/"status":"[^"]*"/"status":"idle"/' "$state_file" > "$tmp_file"
@@ -245,38 +316,62 @@ option_is_enabled() {
 
 window_non_sidebar_panes_csv() {
   local window_id="$1"
-  local sidebar_titles
-  sidebar_titles="$(sidebar_title_pattern)"
-  tmux list-panes -a -F '#{pane_id}|#{pane_title}|#{window_id}' \
-    | awk -F'|' -v current_window="$window_id" -v sidebar_titles="$sidebar_titles" \
-        '$3 == current_window && $2 !~ sidebar_titles { print $1 }' \
+  tmux list-panes -a -F '#{pane_id}|#{pane_title}|#{pane_current_command}|#{window_id}' \
+    | awk -F'|' -v current_window="$window_id" \
+        '$4 == current_window && !(($2 == "Sidebar" || $2 == "tmux-sidebar") && tolower($3) ~ /^python([0-9.]+)?$/) { print $1 }' \
     | LC_ALL=C sort \
     | paste -sd ',' -
 }
 
 list_sidebar_panes() {
-  local sidebar_titles
-  sidebar_titles="$(sidebar_title_pattern)"
-  tmux list-panes -a -F '#{pane_id}|#{pane_title}|#{window_id}' \
-    | awk -F'|' -v sidebar_titles="$sidebar_titles" '$2 ~ sidebar_titles { print $1 "|" $3 }'
+  tmux list-panes -a -F '#{pane_id}|#{pane_title}|#{pane_current_command}|#{window_id}' \
+    | awk -F'|' '($2 == "Sidebar" || $2 == "tmux-sidebar") && tolower($3) ~ /^python([0-9.]+)?$/ { print $1 "|" $4 }'
 }
 
 list_sidebar_panes_in_window() {
   local window_id="$1"
-  local sidebar_titles
-  sidebar_titles="$(sidebar_title_pattern)"
-  tmux list-panes -a -F '#{pane_id}|#{pane_title}|#{window_id}' \
-    | awk -F'|' -v target_window="$window_id" -v sidebar_titles="$sidebar_titles" \
-        '$2 ~ sidebar_titles && $3 == target_window { print $1 "|" $3 }'
+  tmux list-panes -a -F '#{pane_id}|#{pane_title}|#{pane_current_command}|#{window_id}' \
+    | awk -F'|' -v target_window="$window_id" \
+        '(($2 == "Sidebar" || $2 == "tmux-sidebar") && tolower($3) ~ /^python([0-9.]+)?$/) && $4 == target_window { print $1 "|" $4 }'
 }
 
 list_sidebar_panes_in_session() {
   local session_name="$1"
-  local sidebar_titles
-  sidebar_titles="$(sidebar_title_pattern)"
-  tmux list-panes -a -F '#{pane_id}|#{pane_title}|#{session_name}|#{window_id}' \
-    | awk -F'|' -v target_session="$session_name" -v sidebar_titles="$sidebar_titles" \
-        '$2 ~ sidebar_titles && $3 == target_session { print $1 "|" $4 }'
+  tmux list-panes -a -F '#{pane_id}|#{pane_title}|#{pane_current_command}|#{session_name}|#{window_id}' \
+    | awk -F'|' -v target_session="$session_name" \
+        '(($2 == "Sidebar" || $2 == "tmux-sidebar") && tolower($3) ~ /^python([0-9.]+)?$/) && $4 == target_session { print $1 "|" $5 }'
+}
+
+sync_sidebar_width_from_pane() {
+  local pane_id="${1:-}"
+  local pane_details pane_title pane_command pane_width sidebar_entry sidebar_id current_width
+
+  [ -n "$pane_id" ] || return 0
+
+  pane_details="$(tmux display-message -p -t "$pane_id" '#{pane_title}|#{pane_current_command}|#{pane_width}' 2>/dev/null || true)"
+  [ -n "$pane_details" ] || return 0
+
+  IFS='|' read -r pane_title pane_command pane_width <<EOF
+$pane_details
+EOF
+
+  is_sidebar_pane "$pane_title" "$pane_command" || return 0
+  [[ "$pane_width" =~ ^[1-9][0-9]*$ ]] || return 0
+
+  set_pane_tree_option width "$pane_width"
+  write_persisted_sidebar_width "$pane_width" || true
+
+  while IFS='|' read -r sidebar_id _; do
+    [ -n "$sidebar_id" ] || continue
+    [ "$sidebar_id" = "$pane_id" ] && continue
+
+    current_width="$(tmux display-message -p -t "$sidebar_id" '#{pane_width}' 2>/dev/null || true)"
+    if [ "$current_width" != "$pane_width" ]; then
+      tmux resize-pane -t "$sidebar_id" -x "$pane_width" 2>/dev/null || true
+    fi
+  done <<EOF
+$(list_sidebar_panes)
+EOF
 }
 
 clear_sidebar_state_options() {

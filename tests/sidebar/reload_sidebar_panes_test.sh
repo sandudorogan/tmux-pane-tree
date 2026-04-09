@@ -25,3 +25,10 @@ bash scripts/features/sidebar/reload-sidebar-panes.sh
 
 assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'respawn-pane -k -t %90 python3'
 assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'set-option -p -t %90 allow-set-title off'
+
+fake_tmux_no_sidebar
+fake_tmux_register_pane "%17" "work" "@1" "editor" "tmux-sidebar" "codex-aarch64-apple-darwin"
+
+bash scripts/features/sidebar/reload-sidebar-panes.sh
+
+assert_file_not_contains "$TEST_TMUX_DATA_DIR/commands.log" 'respawn-pane -k -t %17'

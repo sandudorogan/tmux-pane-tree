@@ -152,6 +152,32 @@ fake_tmux_set_window_layout() {
   printf '%s\n' "$layout" > "$TEST_TMUX_DATA_DIR/window_layout_${window_id//@/_}.txt"
 }
 
+fake_tmux_set_pane_width() {
+  local pane_id="$1"
+  local pane_width="$2"
+  local meta_file="$TEST_TMUX_DATA_DIR/pane_${pane_id//%/}.meta"
+  [ -f "$meta_file" ] || fail "missing pane metadata for [$pane_id]"
+
+  python3 - "$meta_file" "$pane_width" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+pane_width = sys.argv[2]
+updated = []
+replaced = False
+for line in path.read_text().splitlines():
+    if line.startswith("pane_width="):
+        updated.append(f"pane_width={pane_width}")
+        replaced = True
+    else:
+        updated.append(line)
+if not replaced:
+    updated.append(f"pane_width={pane_width}")
+path.write_text("\n".join(updated) + "\n")
+PY
+}
+
 assert_file_not_contains() {
   local path="$1"
   local unexpected="$2"
@@ -236,6 +262,7 @@ case "$command_name" in
     result="${result//\#\{pane_title\}/$pane_title}"
     result="${result//\#\{pane_current_command\}/$pane_current_command}"
     result="${result//\#\{pane_current_path\}/${pane_current_path:-}}"
+    result="${result//\#\{pane_width\}/${pane_width:-}}"
     layout_file="$data_dir/window_layout_${window_id//@/_}.txt"
     if [ -f "$layout_file" ]; then
       window_layout="$(cat "$layout_file")"
@@ -264,7 +291,7 @@ case "$command_name" in
           ;;
       esac
     done
-    if [[ "$format" == '#{pane_id}|#{pane_title}' || "$format" == '#{pane_id}|#{pane_title}|#{window_id}' || "$format" == '#{pane_id}|#{pane_title}|#{session_name}|#{window_id}' || "$format" == '#{pane_id}|#{pane_active}' || "$format" == '#{pane_id}|#{pane_current_path}' || "$format" == '#{pane_id}|#{pane_current_path}|#{pane_active}' || "$format" == '#{pane_id}' || "$format" == '#{session_name}' ]]; then
+    if [[ "$format" == '#{pane_id}|#{pane_title}' || "$format" == '#{pane_id}|#{pane_title}|#{window_id}' || "$format" == '#{pane_id}|#{pane_title}|#{pane_current_command}|#{window_id}' || "$format" == '#{pane_id}|#{pane_title}|#{session_name}|#{window_id}' || "$format" == '#{pane_id}|#{pane_title}|#{pane_current_command}|#{session_name}|#{window_id}' || "$format" == '#{pane_id}|#{pane_active}' || "$format" == '#{pane_id}|#{pane_current_path}' || "$format" == '#{pane_id}|#{pane_current_path}|#{pane_active}' || "$format" == '#{pane_id}' || "$format" == '#{session_name}' ]]; then
       found="0"
       if [ "$format" = '#{session_name}' ]; then
         if [ -z "$target_window" ] && [ -s "$data_dir/list_panes.txt" ]; then
@@ -314,8 +341,14 @@ case "$command_name" in
           '#{pane_id}|#{pane_title}|#{window_id}')
             printf '%s|%s|%s\n' "$pane_id" "$pane_title" "$window_id"
             ;;
+          '#{pane_id}|#{pane_title}|#{pane_current_command}|#{window_id}')
+            printf '%s|%s|%s|%s\n' "$pane_id" "$pane_title" "$pane_current_command" "$window_id"
+            ;;
           '#{pane_id}|#{pane_title}|#{session_name}|#{window_id}')
             printf '%s|%s|%s|%s\n' "$pane_id" "$pane_title" "$session_name" "$window_id"
+            ;;
+          '#{pane_id}|#{pane_title}|#{pane_current_command}|#{session_name}|#{window_id}')
+            printf '%s|%s|%s|%s|%s\n' "$pane_id" "$pane_title" "$pane_current_command" "$session_name" "$window_id"
             ;;
           '#{pane_id}|#{pane_active}')
             if [ "$pane_id" = "$window_active_pane" ]; then
@@ -429,6 +462,49 @@ METAEOF
     done
     [ -n "$target_window" ] || exit 1
     printf '%s\n' "$layout" > "$data_dir/window_layout_${target_window//@/_}.txt"
+    ;;
+  resize-pane)
+    printf 'resize-pane %s\n' "$*" >> "$data_dir/commands.log"
+    target=""
+    width=""
+    while [ "$#" -gt 0 ]; do
+      case "$1" in
+        -t)
+          target="$2"
+          shift 2
+          ;;
+        -x)
+          width="$2"
+          shift 2
+          ;;
+        *)
+          shift
+          ;;
+      esac
+    done
+    if [ -n "$target" ] && [ -n "$width" ]; then
+      meta_file="$data_dir/pane_${target//%/}.meta"
+      if [ -f "$meta_file" ]; then
+        python3 - "$meta_file" "$width" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+width = sys.argv[2]
+updated = []
+replaced = False
+for line in path.read_text().splitlines():
+    if line.startswith("pane_width="):
+        updated.append(f"pane_width={width}")
+        replaced = True
+    else:
+        updated.append(line)
+if not replaced:
+    updated.append(f"pane_width={width}")
+path.write_text("\n".join(updated) + "\n")
+PY
+      fi
+    fi
     ;;
   respawn-pane)
     printf 'respawn-pane %s\n' "$*" >> "$data_dir/commands.log"

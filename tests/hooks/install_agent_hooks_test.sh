@@ -31,11 +31,15 @@ TIMESTAMP="20260320000000" \
 bash "$REPO_ROOT/scripts/features/hooks/install-agent-hooks.sh"
 
 assert_file_contains "$CLAUDE_SETTINGS" 'scripts/features/hooks/hook-claude.sh'
+assert_file_contains "$CLAUDE_SETTINGS" '"SubagentStart"'
 assert_file_contains "$CLAUDE_SETTINGS" '"SubagentStop"'
 assert_file_contains "$CODEX_CONFIG" 'scripts/features/hooks/hook-codex.sh'
+grep -Fx -- "notify = [\"bash\", \"$NORMALIZED_PLUGIN_DST/scripts/features/hooks/hook-codex.sh\"]" "$CODEX_CONFIG" >/dev/null \
+  || fail "expected explicit Codex notify replacement line in $CODEX_CONFIG"
 assert_file_contains "$CURSOR_HOOKS" "$NORMALIZED_PLUGIN_DST/scripts/features/hooks/hook-cursor.sh"
 assert_file_contains "$CURSOR_HOOKS" '"sessionStart"'
 assert_file_contains "$CURSOR_HOOKS" '"postToolUseFailure"'
+assert_file_contains "$CURSOR_HOOKS" '"subagentStart": ['
 assert_file_contains "$CURSOR_HOOKS" '"subagentStop"'
 assert_file_contains "$EXPLICIT_OPENCODE_PLUGIN" 'scripts/features/hooks/hook-opencode.sh'
 assert_file_contains "$EXPLICIT_OPENCODE_PLUGIN" 'properties?.status?.type'
