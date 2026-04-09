@@ -3,7 +3,7 @@
 [![Tests](https://github.com/sandudorogan/tmux-pane-tree/actions/workflows/test.yml/badge.svg)](https://github.com/sandudorogan/tmux-pane-tree/actions/workflows/test.yml)
 
 A tmux plugin that keeps a persistent, interactive session tree on the left
-side of every window, with live badges for `claude`, `codex`, `cursor`, and `opencode`.
+side of every window, with live badges for `claude`, `codex`, `cursor`, `opencode`, `pi`, and `kiro`.
 
 ```
   ┌─ Sidebar ────────────┬────────────────────────────────┐
@@ -400,6 +400,9 @@ It creates timestamped backups before changing existing files, then replaces
 the single `notify = [...]` line in `~/.codex/config.toml` with the
 tmux-pane-tree Codex hook wrapper.
 
+Pi and Kiro do not currently have a built-in config patcher here; wire them
+manually with the wrapper scripts below.
+
 ### Manual wiring
 
 If you prefer to edit configs yourself, point each tool at the installed hook
@@ -409,6 +412,8 @@ wrappers under `scripts/features/hooks/`:
 - Codex: `hook-codex.sh`
 - Cursor: `hook-cursor.sh`
 - OpenCode: `hook-opencode.sh`
+- Pi: `hook-pi.sh`
+- Kiro: `hook-kiro.sh`
 
 For Claude Code and Cursor, make sure you register the lifecycle events listed
 above so subagent suppression can distinguish delegate work from the parent

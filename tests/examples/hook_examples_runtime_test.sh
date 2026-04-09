@@ -22,6 +22,22 @@ cat > "${TEST_HOOK_STDIN_CAPTURE:?}"
 EOF
 chmod +x "$plugin_dir/scripts/features/hooks/hook-codex.sh"
 
+cat > "$plugin_dir/scripts/features/hooks/hook-pi.sh" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\n' "${1:-}" > "${TEST_HOOK_ARGV_CAPTURE:?}"
+cat > "${TEST_HOOK_STDIN_CAPTURE:?}"
+EOF
+chmod +x "$plugin_dir/scripts/features/hooks/hook-pi.sh"
+
+cat > "$plugin_dir/scripts/features/hooks/hook-kiro.sh" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\n' "${1:-}" > "${TEST_HOOK_ARGV_CAPTURE:?}"
+cat > "${TEST_HOOK_STDIN_CAPTURE:?}"
+EOF
+chmod +x "$plugin_dir/scripts/features/hooks/hook-kiro.sh"
+
 cat > "$plugin_dir/scripts/features/hooks/hook-opencode.sh" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
@@ -62,6 +78,24 @@ assert_file_contains "$TEST_HOOK_STDIN_CAPTURE" '"status":"completed"'
 assert_file_contains "$TEST_HOOK_STDIN_CAPTURE" '"message":"Finished task"'
 assert_eq "$(cat "$TEST_HOOK_ARGV_CAPTURE")" ""
 
+export TEST_HOOK_ARGV_CAPTURE="$TEST_TMP/pi-argv.txt"
+export TEST_HOOK_STDIN_CAPTURE="$TEST_TMP/pi-stdin.json"
+export PI_EVENT="agent_start"
+export PI_MESSAGE="Working"
+bash examples/pi-hook.sh
+assert_file_contains "$TEST_HOOK_STDIN_CAPTURE" '"event":"agent_start"'
+assert_file_contains "$TEST_HOOK_STDIN_CAPTURE" '"message":"Working"'
+assert_eq "$(cat "$TEST_HOOK_ARGV_CAPTURE")" ""
+
+export TEST_HOOK_ARGV_CAPTURE="$TEST_TMP/kiro-argv.txt"
+export TEST_HOOK_STDIN_CAPTURE="$TEST_TMP/kiro-stdin.json"
+export KIRO_EVENT="agent_end"
+export KIRO_MESSAGE="Finished"
+bash examples/kiro-hook.sh
+assert_file_contains "$TEST_HOOK_STDIN_CAPTURE" '"event":"agent_end"'
+assert_file_contains "$TEST_HOOK_STDIN_CAPTURE" '"message":"Finished"'
+assert_eq "$(cat "$TEST_HOOK_ARGV_CAPTURE")" ""
+
 export TEST_HOOK_ARGV_CAPTURE="$TEST_TMP/opencode-argv.txt"
 export TEST_HOOK_STDIN_CAPTURE="$TEST_TMP/opencode-stdin.json"
 export OPENCODE_EVENT="session-start"
@@ -94,6 +128,8 @@ mkdir -p "$relative_plugin_dir/examples" \
   "$relative_plugin_dir/scripts/features/hooks"
 cp examples/claude-hook.sh "$relative_plugin_dir/examples/claude-hook.sh"
 cp examples/codex-hook.sh "$relative_plugin_dir/examples/codex-hook.sh"
+cp examples/pi-hook.sh "$relative_plugin_dir/examples/pi-hook.sh"
+cp examples/kiro-hook.sh "$relative_plugin_dir/examples/kiro-hook.sh"
 cp examples/cursor-hook.sh "$relative_plugin_dir/examples/cursor-hook.sh"
 cp examples/opencode-hook.sh "$relative_plugin_dir/examples/opencode-hook.sh"
 cp scripts/core/lib.sh "$relative_plugin_dir/scripts/core/lib.sh"
@@ -111,6 +147,20 @@ printf '%s\n' "${1:-}" > "${TEST_HOOK_ARGV_CAPTURE:?}"
 cat > "${TEST_HOOK_STDIN_CAPTURE:?}"
 EOF
 chmod +x "$relative_plugin_dir/scripts/features/hooks/hook-codex.sh"
+cat > "$relative_plugin_dir/scripts/features/hooks/hook-pi.sh" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\n' "${1:-}" > "${TEST_HOOK_ARGV_CAPTURE:?}"
+cat > "${TEST_HOOK_STDIN_CAPTURE:?}"
+EOF
+chmod +x "$relative_plugin_dir/scripts/features/hooks/hook-pi.sh"
+cat > "$relative_plugin_dir/scripts/features/hooks/hook-kiro.sh" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\n' "${1:-}" > "${TEST_HOOK_ARGV_CAPTURE:?}"
+cat > "${TEST_HOOK_STDIN_CAPTURE:?}"
+EOF
+chmod +x "$relative_plugin_dir/scripts/features/hooks/hook-kiro.sh"
 cat > "$relative_plugin_dir/scripts/features/hooks/hook-cursor.sh" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
@@ -147,6 +197,24 @@ export CODEX_MESSAGE="From script path"
 HOME="$TEST_TMP/fallback-home" bash "$relative_plugin_dir/examples/codex-hook.sh"
 assert_file_contains "$TEST_HOOK_STDIN_CAPTURE" '"event":"relative-codex"'
 assert_file_contains "$TEST_HOOK_STDIN_CAPTURE" '"status":"running"'
+assert_file_contains "$TEST_HOOK_STDIN_CAPTURE" '"message":"From script path"'
+assert_eq "$(cat "$TEST_HOOK_ARGV_CAPTURE")" ""
+
+export TEST_HOOK_ARGV_CAPTURE="$TEST_TMP/pi-relative-argv.txt"
+export TEST_HOOK_STDIN_CAPTURE="$TEST_TMP/pi-relative-stdin.json"
+export PI_EVENT="relative-pi"
+export PI_MESSAGE="From script path"
+HOME="$TEST_TMP/fallback-home" bash "$relative_plugin_dir/examples/pi-hook.sh"
+assert_file_contains "$TEST_HOOK_STDIN_CAPTURE" '"event":"relative-pi"'
+assert_file_contains "$TEST_HOOK_STDIN_CAPTURE" '"message":"From script path"'
+assert_eq "$(cat "$TEST_HOOK_ARGV_CAPTURE")" ""
+
+export TEST_HOOK_ARGV_CAPTURE="$TEST_TMP/kiro-relative-argv.txt"
+export TEST_HOOK_STDIN_CAPTURE="$TEST_TMP/kiro-relative-stdin.json"
+export KIRO_EVENT="relative-kiro"
+export KIRO_MESSAGE="From script path"
+HOME="$TEST_TMP/fallback-home" bash "$relative_plugin_dir/examples/kiro-hook.sh"
+assert_file_contains "$TEST_HOOK_STDIN_CAPTURE" '"event":"relative-kiro"'
 assert_file_contains "$TEST_HOOK_STDIN_CAPTURE" '"message":"From script path"'
 assert_eq "$(cat "$TEST_HOOK_ARGV_CAPTURE")" ""
 
