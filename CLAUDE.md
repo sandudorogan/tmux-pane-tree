@@ -5,12 +5,15 @@ A tmux plugin that adds an interactive sidebar showing sessions, windows, and pa
 ## Architecture
 
 ```
-sidebar.tmux          <- TPM entry point, registers hooks and keybindings
+sidebar.tmux          <- polyglot shim (TPM entry point), sources tmux-pane-tree.tmux
+tmux-pane-tree.tmux   <- primary tmux config: hooks, keybindings, startup
+sidebar.conf          <- legacy config (kept for install-live.sh compatibility)
 scripts/
   core/
     lib.sh            <- shared bash utilities (state, tmux helpers, json)
     hook-lib.sh       <- shared shell hook input handling
-    hook-parser.py    <- shared Claude/Codex event parsing
+    hook-parser.py    <- shared agent event parsing
+    hook-metadata.py  <- structured metadata extraction from hook payloads
   ui/
     sidebar-ui.py     <- interactive curses loop entrypoint
     sidebar_ui_lib/
@@ -18,12 +21,13 @@ scripts/
       status.py       <- live agent detection and badge selection
       tree.py         <- tree loading, selection, search helpers
       render.py       <- curses colors, drawing, row-map/context-menu IPC
+      icon_config.py  <- icon theme/badge config (ASCII, Unicode, Nerd Font)
   features/
     sidebar/          <- toggle/ensure/focus/close/render lifecycle helpers
-    hooks/            <- thin Claude/Codex hook wrappers
+    hooks/            <- agent hook wrappers, event filter, built-in installer
     state/            <- pane-state writers and cleanup helpers
     context-menu/     <- right-click menu integration
-    sessions/         <- prompted creation of windows/sessions
+    sessions/         <- creation and renaming of windows/sessions
   install-live.sh     <- dev installer (copies to plugin dir, patches paths, reloads)
 tests/
   testlib.sh          <- fake tmux test framework
@@ -32,7 +36,9 @@ tests/
   core/ sidebar/ ui/ hooks/ state/ sessions/ context-menu/ integration/ examples/
                       <- grouped test suites
 examples/
-  claude-hook.sh / codex-hook.sh / opencode-hook.sh  <- agent integration hooks
+  claude-hook.sh / codex-hook.sh / cursor-hook.sh / kiro-hook.sh / opencode-hook.sh / pi-hook.sh
+                      <- agent integration hooks
+docs/                 <- project landing page
 ```
 
 State files live in `$XDG_STATE_HOME/tmux-sidebar/pane-{PANE_ID}.json` (defaults to `~/.local/state/tmux-sidebar/`).
@@ -121,10 +127,12 @@ tmux source-file sidebar.tmux
 
 ### tmux plugin conventions
 
-- `sidebar.tmux` is a bash wrapper (with shebang) that sources `sidebar.conf` — TPM executes `.tmux` files as scripts, so raw tmux commands live in `sidebar.conf`
+- `sidebar.tmux` is a polyglot shim (bash + tmux conf) that sources `tmux-pane-tree.tmux` — TPM executes `.tmux` files as bash scripts, tmux `source-file` reads them as config
+- `tmux-pane-tree.tmux` is the primary tmux config that registers hooks and keybindings
+- `sidebar.conf` is the legacy config, kept for `install-live.sh` compatibility patching
 - Use `#{d:current_file}` for relative paths in hook registrations
 - Hook indices (e.g. `[198]`) are namespaced to avoid collisions with other plugins
-- State stored in tmux global options prefixed `@tmux_sidebar_`
+- State stored in tmux global options prefixed `@tmux_sidebar_` (also accepts `@tmux_pane_tree_` prefix)
 - Per-window state keyed by window ID: `@tmux_sidebar_{suffix}_w{ID}`
 - Background execution via `run-shell -b` to avoid blocking tmux
 
@@ -143,6 +151,6 @@ tmux source-file sidebar.tmux
 
 - No fallback logic unless explicitly requested
 - Fail fast — `set -euo pipefail` in bash, no silent error swallowing
-- Separation of concerns: `scripts/core/lib.sh` for shared bash logic, `scripts/core/hook-lib.sh` and `scripts/core/hook-parser.py` for shared hook parsing, `scripts/ui/sidebar-ui.py` as the UI entrypoint, and `scripts/ui/sidebar_ui_lib/` for focused Python UI modules
+- Separation of concerns: `scripts/core/lib.sh` for shared bash logic, `scripts/core/hook-lib.sh`, `scripts/core/hook-parser.py`, and `scripts/core/hook-metadata.py` for shared hook parsing, `scripts/ui/sidebar-ui.py` as the UI entrypoint, and `scripts/ui/sidebar_ui_lib/` for focused Python UI modules
 - Atomic state mutations — write to temp file then `mv` to avoid partial reads
 - Mutex via `tmux wait-for` for operations that race (e.g. ensure-sidebar-pane)
