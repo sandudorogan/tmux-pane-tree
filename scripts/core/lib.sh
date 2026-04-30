@@ -131,11 +131,23 @@ is_sidebar_pane_title() {
   [[ "$title" =~ $sidebar_titles ]]
 }
 
+sidebar_pane_command_awk_pattern() {
+  printf '%s\n' '^(python|fish|bash|zsh|sh|dash|ksh|tcsh|csh)([0-9.]+)?$'
+}
+
 is_sidebar_pane_command() {
   local command="${1:-}"
   command="$(printf '%s' "$command" | tr '[:upper:]' '[:lower:]')"
   case "$command" in
     python|python[0-9]*|python[0-9]*.[0-9]*) return 0 ;;
+    fish|fish[0-9]*|fish[0-9]*.[0-9]*) return 0 ;;
+    bash|bash[0-9]*|bash[0-9]*.[0-9]*) return 0 ;;
+    zsh|zsh[0-9]*|zsh[0-9]*.[0-9]*) return 0 ;;
+    sh|sh[0-9]*|sh[0-9]*.[0-9]*) return 0 ;;
+    dash|dash[0-9]*|dash[0-9]*.[0-9]*) return 0 ;;
+    ksh|ksh[0-9]*|ksh[0-9]*.[0-9]*) return 0 ;;
+    tcsh|tcsh[0-9]*|tcsh[0-9]*.[0-9]*) return 0 ;;
+    csh|csh[0-9]*|csh[0-9]*.[0-9]*) return 0 ;;
     *) return 1 ;;
   esac
 }
@@ -316,30 +328,39 @@ option_is_enabled() {
 
 window_non_sidebar_panes_csv() {
   local window_id="$1"
+  local cmd_pattern
+  cmd_pattern="$(sidebar_pane_command_awk_pattern)"
   tmux list-panes -a -F '#{pane_id}|#{pane_title}|#{pane_current_command}|#{window_id}' \
-    | awk -F'|' -v current_window="$window_id" \
-        '$4 == current_window && !(($2 == "Sidebar" || $2 == "tmux-sidebar") && tolower($3) ~ /^python([0-9.]+)?$/) { print $1 }' \
+    | awk -F'|' -v current_window="$window_id" -v cmd_pattern="$cmd_pattern" \
+        '$4 == current_window && !(($2 == "Sidebar" || $2 == "tmux-sidebar") && tolower($3) ~ cmd_pattern) { print $1 }' \
     | LC_ALL=C sort \
     | paste -sd ',' -
 }
 
 list_sidebar_panes() {
+  local cmd_pattern
+  cmd_pattern="$(sidebar_pane_command_awk_pattern)"
   tmux list-panes -a -F '#{pane_id}|#{pane_title}|#{pane_current_command}|#{window_id}' \
-    | awk -F'|' '($2 == "Sidebar" || $2 == "tmux-sidebar") && tolower($3) ~ /^python([0-9.]+)?$/ { print $1 "|" $4 }'
+    | awk -F'|' -v cmd_pattern="$cmd_pattern" \
+        '($2 == "Sidebar" || $2 == "tmux-sidebar") && tolower($3) ~ cmd_pattern { print $1 "|" $4 }'
 }
 
 list_sidebar_panes_in_window() {
   local window_id="$1"
+  local cmd_pattern
+  cmd_pattern="$(sidebar_pane_command_awk_pattern)"
   tmux list-panes -a -F '#{pane_id}|#{pane_title}|#{pane_current_command}|#{window_id}' \
-    | awk -F'|' -v target_window="$window_id" \
-        '(($2 == "Sidebar" || $2 == "tmux-sidebar") && tolower($3) ~ /^python([0-9.]+)?$/) && $4 == target_window { print $1 "|" $4 }'
+    | awk -F'|' -v target_window="$window_id" -v cmd_pattern="$cmd_pattern" \
+        '(($2 == "Sidebar" || $2 == "tmux-sidebar") && tolower($3) ~ cmd_pattern) && $4 == target_window { print $1 "|" $4 }'
 }
 
 list_sidebar_panes_in_session() {
   local session_name="$1"
+  local cmd_pattern
+  cmd_pattern="$(sidebar_pane_command_awk_pattern)"
   tmux list-panes -a -F '#{pane_id}|#{pane_title}|#{pane_current_command}|#{session_name}|#{window_id}' \
-    | awk -F'|' -v target_session="$session_name" \
-        '(($2 == "Sidebar" || $2 == "tmux-sidebar") && tolower($3) ~ /^python([0-9.]+)?$/) && $4 == target_session { print $1 "|" $5 }'
+    | awk -F'|' -v target_session="$session_name" -v cmd_pattern="$cmd_pattern" \
+        '(($2 == "Sidebar" || $2 == "tmux-sidebar") && tolower($3) ~ cmd_pattern) && $4 == target_session { print $1 "|" $5 }'
 }
 
 sync_sidebar_width_from_pane() {

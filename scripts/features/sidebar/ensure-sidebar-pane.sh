@@ -48,12 +48,13 @@ cleanup() {
 }
 trap cleanup EXIT
 
+cmd_pattern="$(sidebar_pane_command_awk_pattern)"
 stored_pane="$(tmux show-options -gv "$sidebar_pane_option" 2>/dev/null || true)"
 if [ -n "$stored_pane" ]; then
   stored_sidebar="$(
     tmux list-panes -a -F '#{pane_id}|#{pane_title}|#{pane_current_command}|#{window_id}' \
-      | awk -F'|' -v target_pane="$stored_pane" -v current_window="$current_window" \
-          '$1 == target_pane && ($2 == "Sidebar" || $2 == "tmux-sidebar") && tolower($3) ~ /^python([0-9.]+)?$/ && $4 == current_window { print $1; exit }'
+      | awk -F'|' -v target_pane="$stored_pane" -v current_window="$current_window" -v cmd_pattern="$cmd_pattern" \
+          '$1 == target_pane && ($2 == "Sidebar" || $2 == "tmux-sidebar") && tolower($3) ~ cmd_pattern && $4 == current_window { print $1; exit }'
   )"
   if [ -n "$stored_sidebar" ]; then
     exit 0
@@ -63,8 +64,8 @@ fi
 
 existing_pane="$(
   tmux list-panes -a -F '#{pane_id}|#{pane_title}|#{pane_current_command}|#{window_id}' \
-    | awk -F'|' -v current_window="$current_window" \
-        '($2 == "Sidebar" || $2 == "tmux-sidebar") && tolower($3) ~ /^python([0-9.]+)?$/ && $4 == current_window { print $1; exit }'
+    | awk -F'|' -v current_window="$current_window" -v cmd_pattern="$cmd_pattern" \
+        '($2 == "Sidebar" || $2 == "tmux-sidebar") && tolower($3) ~ cmd_pattern && $4 == current_window { print $1; exit }'
 )"
 if [ -n "$existing_pane" ]; then
   tmux set-option -g "$sidebar_pane_option" "$existing_pane"

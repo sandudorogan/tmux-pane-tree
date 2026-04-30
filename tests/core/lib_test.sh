@@ -75,3 +75,29 @@ assert_eq "$(cat "$TMUX_PANE_TREE_STATE_DIR/sidebar-width.txt")" "37"
 
 run_script scripts/core/lib.sh read_persisted_sidebar_width
 assert_eq "$output" "37"
+
+(
+  . scripts/core/lib.sh
+  for cmd in python python3 python3.11 fish bash zsh sh dash ksh tcsh csh FISH Bash; do
+    is_sidebar_pane_command "$cmd" || exit 1
+  done
+  for cmd in nvim codex codex-aarch64-apple-darwin "" cursor-aarch64-apple-darwin; do
+    if is_sidebar_pane_command "$cmd"; then exit 1; fi
+  done
+  is_sidebar_pane "Sidebar" "fish" || exit 1
+  is_sidebar_pane "Sidebar" "python3" || exit 1
+  is_sidebar_pane "tmux-sidebar" "bash" || exit 1
+  if is_sidebar_pane "editor" "fish"; then exit 1; fi
+  if is_sidebar_pane "Sidebar" "codex-aarch64-apple-darwin"; then exit 1; fi
+) || fail "is_sidebar_pane_command/is_sidebar_pane allowlist mismatch"
+
+fake_tmux_no_sidebar
+fake_tmux_register_pane "%1" "work" "@1" "editor" "nvim"
+fake_tmux_register_pane "%90" "work" "@1" "editor" "Sidebar" "fish"
+printf '%%90|Sidebar|@1\n' >> "$TEST_TMUX_DATA_DIR/toggle_panes.txt"
+
+run_script scripts/core/lib.sh list_sidebar_panes_in_window "@1"
+assert_eq "$output" "%90|@1"
+
+run_script scripts/core/lib.sh list_sidebar_panes
+assert_eq "$output" "%90|@1"

@@ -32,7 +32,10 @@ DEFAULT_SHORTCUTS = {
     "toggle_filter": "f",
 }
 SIDEBAR_TITLES = {"Sidebar", "tmux-sidebar"}
-SIDEBAR_COMMAND_RE = re.compile(r"^python(?:[0-9.]+)?$", re.IGNORECASE)
+SIDEBAR_COMMAND_RE = re.compile(
+    r"^(?:python|fish|bash|zsh|sh|dash|ksh|tcsh|csh)(?:[0-9.]+)?$",
+    re.IGNORECASE,
+)
 INPUT_POLL_MS = 25
 REFRESH_INTERVAL_SECONDS = 2.0
 SHORTCUTS_CACHE_TTL_SECONDS = 30.0
