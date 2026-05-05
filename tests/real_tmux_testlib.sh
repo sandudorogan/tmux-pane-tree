@@ -141,13 +141,13 @@ real_tmux_run_shell_capture() {
   local output_file="$TEST_TMP/run-shell-output.$token"
   local status_file="$TEST_TMP/run-shell-status.$token"
   local wrapped_command=""
-  local attempts=100
+  local attempts=600
   local status=""
   local output=""
   local _attempt
 
   shell_command="$(real_tmux_shell_command "$@")"
-  printf -v wrapped_command 'bash -lc %q' \
+  printf -v wrapped_command 'bash -c %q' \
     "($shell_command) > \"$output_file\" 2>&1; printf '%s\n' \"\$?\" > \"$status_file\""
   real_tmux run-shell -b "$wrapped_command"
 
