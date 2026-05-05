@@ -2,6 +2,12 @@
 
 All notable project versions are documented here.
 
+## 0.3.3
+
+- Fixed macOS+fish bug where Ctrl-b t stacked new sidebars because detection only matched `python` as `pane_current_command`; allowlist now covers common shells while still excluding agent CLIs like codex/cursor.
+- Hardened the live-tmux integration test helper against CI flakes by widening the run-shell poll budget and dropping login-shell profile loading.
+- Release commit `c4ab2b4`.
+
 ## 0.3.2
 
 - Added built-in Pi and Kiro hook installers, example hook scripts, parser support, and sidebar icons/status badges.
