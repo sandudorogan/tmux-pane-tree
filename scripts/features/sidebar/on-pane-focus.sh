@@ -13,7 +13,7 @@ enabled="$(tmux show-options -gv @tmux_sidebar_enabled 2>/dev/null || printf '0\
 if [ -n "$pane_id" ]; then
   pane_title="$(tmux display-message -p -t "$pane_id" '#{pane_title}' 2>/dev/null || true)"
   pane_command="$(tmux display-message -p -t "$pane_id" '#{pane_current_command}' 2>/dev/null || true)"
-  if ! is_sidebar_pane "$pane_title" "$pane_command"; then
+  if ! pane_is_known_sidebar "$pane_id" "$pane_title" "$pane_command"; then
     tmux set-option -g @tmux_sidebar_main_pane "$pane_id"
   fi
 
@@ -24,9 +24,15 @@ if [ -n "$pane_id" ]; then
       clear_terminal_pane_state "$state_file" || true
     elif printf '%s\n' "$pane_title" | grep -qE '(: (done|needs-input|error))\s*$'; then
       tmp_file="$(mktemp "$state_dir/.pane-state.XXXXXX")"
-      printf '{"pane_id":"%s","app":"claude","status":"idle","updated_at":%d}\n' \
-        "$pane_id" "$(date +%s)" > "$tmp_file"
-      mv "$tmp_file" "$state_file"
+      if printf '{"pane_id":"%s","app":"claude","status":"idle","updated_at":%d}\n' \
+        "$pane_id" "$(date +%s)" > "$tmp_file" \
+        && mv "$tmp_file" "$state_file"
+      then
+        :
+      else
+        rm -f "$tmp_file"
+        exit 1
+      fi
       signal_sidebar_refresh
     fi
   fi

@@ -120,6 +120,10 @@ sidebar_legacy_pane_title() {
   printf '%s\n' 'tmux-sidebar'
 }
 
+sidebar_pane_marker_option() {
+  printf '%s\n' '@tmux_sidebar_owned'
+}
+
 sidebar_title_pattern() {
   printf '%s\n' "^($(sidebar_pane_title)|$(sidebar_legacy_pane_title))$"
 }
@@ -157,6 +161,35 @@ is_sidebar_pane() {
   local command="${2:-}"
   is_sidebar_pane_title "$title" || return 1
   is_sidebar_pane_command "$command"
+}
+
+mark_sidebar_pane() {
+  local pane_id="${1:-}"
+  [ -n "$pane_id" ] || return 0
+  tmux set-option -p -t "$pane_id" "$(sidebar_pane_marker_option)" 1 2>/dev/null || true
+}
+
+pane_is_marked_sidebar() {
+  local pane_id="${1:-}"
+  local marker
+  [ -n "$pane_id" ] || return 1
+  marker="$(tmux display-message -p -t "$pane_id" "#{$(sidebar_pane_marker_option)}" 2>/dev/null || true)"
+  [ "$marker" = "1" ]
+}
+
+pane_is_tracked_sidebar() {
+  local pane_id="${1:-}"
+  [ -n "$pane_id" ] || return 1
+  (tmux show-options -g 2>/dev/null || true) \
+    | awk -v pane_id="$pane_id" '/^@tmux_sidebar_pane_w/ { gsub(/^"|"$/, "", $2); if ($2 == pane_id) { found = 1 } } END { exit found ? 0 : 1 }'
+}
+
+pane_is_known_sidebar() {
+  local pane_id="${1:-}"
+  local title="${2:-}"
+  local command="${3:-}"
+  pane_is_marked_sidebar "$pane_id" && return 0
+  pane_is_tracked_sidebar "$pane_id" && is_sidebar_pane "$title" "$command"
 }
 
 sidebar_pane_border_format() {
@@ -281,8 +314,14 @@ clear_terminal_pane_state() {
     needs-input)
       state_dir="$(dirname "$state_file")"
       tmp_file="$(mktemp "$state_dir/.pane-state.XXXXXX")"
-      sed 's/"status":"[^"]*"/"status":"idle"/' "$state_file" > "$tmp_file"
-      mv "$tmp_file" "$state_file"
+      if sed 's/"status":"[^"]*"/"status":"idle"/' "$state_file" > "$tmp_file" \
+        && mv "$tmp_file" "$state_file"
+      then
+        :
+      else
+        rm -f "$tmp_file"
+        return 1
+      fi
       signal_sidebar_refresh
       return 0
       ;;
@@ -326,41 +365,88 @@ option_is_enabled() {
   esac
 }
 
+sidebar_enabled() {
+  local enabled
+  enabled="$(tmux show-options -gv @tmux_sidebar_enabled 2>/dev/null || printf '0\n')"
+  [ "$enabled" = "1" ]
+}
+
+sidebar_lifecycle_lock_name() {
+  printf '%s\n' '@tmux_sidebar_lifecycle'
+}
+
+acquire_sidebar_lifecycle_lock() {
+  if [ "${TMUX_SIDEBAR_LIFECYCLE_LOCKED:-0}" = "1" ]; then
+    return 0
+  fi
+
+  tmux wait-for -L "$(sidebar_lifecycle_lock_name)"
+  TMUX_SIDEBAR_LIFECYCLE_LOCKED=1
+  export TMUX_SIDEBAR_LIFECYCLE_LOCKED
+  TMUX_SIDEBAR_LIFECYCLE_LOCK_OWNER=1
+}
+
+release_sidebar_lifecycle_lock() {
+  if [ "${TMUX_SIDEBAR_LIFECYCLE_LOCK_OWNER:-0}" != "1" ]; then
+    return 0
+  fi
+
+  tmux wait-for -U "$(sidebar_lifecycle_lock_name)" 2>/dev/null || true
+  TMUX_SIDEBAR_LIFECYCLE_LOCK_OWNER=0
+}
+
 window_non_sidebar_panes_csv() {
   local window_id="$1"
-  local cmd_pattern
-  cmd_pattern="$(sidebar_pane_command_awk_pattern)"
-  tmux list-panes -a -F '#{pane_id}|#{pane_title}|#{pane_current_command}|#{window_id}' \
-    | awk -F'|' -v current_window="$window_id" -v cmd_pattern="$cmd_pattern" \
-        '$4 == current_window && !(($2 == "Sidebar" || $2 == "tmux-sidebar") && tolower($3) ~ cmd_pattern) { print $1 }' \
+  tmux list-panes -a -F '#{pane_id}|#{@tmux_sidebar_owned}|#{window_id}' \
+    | awk -F'|' -v current_window="$window_id" \
+        '$3 == current_window && $2 != "1" { print $1 }' \
     | LC_ALL=C sort \
     | paste -sd ',' -
 }
 
+list_marked_sidebar_panes() {
+  tmux list-panes -a -F '#{pane_id}|#{@tmux_sidebar_owned}|#{window_id}' \
+    | awk -F'|' '$2 == "1" { print $1 "|" $3 }'
+}
+
+list_tracked_sidebar_panes() {
+  local pane_id pane_details pane_title pane_command window_id
+  (tmux show-options -g 2>/dev/null || true) \
+    | awk '/^@tmux_sidebar_pane_w/ { gsub(/^"|"$/, "", $2); print $2 }' \
+    | while IFS= read -r pane_id; do
+        [ -n "$pane_id" ] || continue
+        pane_details="$(tmux display-message -p -t "$pane_id" '#{pane_title}|#{pane_current_command}|#{window_id}' 2>/dev/null || true)"
+        [ -n "$pane_details" ] || continue
+        IFS='|' read -r pane_title pane_command window_id <<EOF
+$pane_details
+EOF
+        is_sidebar_pane "$pane_title" "$pane_command" || continue
+        printf '%s|%s\n' "$pane_id" "$window_id"
+      done
+}
+
 list_sidebar_panes() {
-  local cmd_pattern
-  cmd_pattern="$(sidebar_pane_command_awk_pattern)"
-  tmux list-panes -a -F '#{pane_id}|#{pane_title}|#{pane_current_command}|#{window_id}' \
-    | awk -F'|' -v cmd_pattern="$cmd_pattern" \
-        '($2 == "Sidebar" || $2 == "tmux-sidebar") && tolower($3) ~ cmd_pattern { print $1 "|" $4 }'
+  {
+    list_marked_sidebar_panes
+    list_tracked_sidebar_panes
+  } | awk -F'|' 'NF >= 2 && !seen[$1]++ { print $1 "|" $2 }'
 }
 
 list_sidebar_panes_in_window() {
   local window_id="$1"
-  local cmd_pattern
-  cmd_pattern="$(sidebar_pane_command_awk_pattern)"
-  tmux list-panes -a -F '#{pane_id}|#{pane_title}|#{pane_current_command}|#{window_id}' \
-    | awk -F'|' -v target_window="$window_id" -v cmd_pattern="$cmd_pattern" \
-        '(($2 == "Sidebar" || $2 == "tmux-sidebar") && tolower($3) ~ cmd_pattern) && $4 == target_window { print $1 "|" $4 }'
+  list_sidebar_panes | awk -F'|' -v target_window="$window_id" '$2 == target_window { print $1 "|" $2 }'
 }
 
 list_sidebar_panes_in_session() {
   local session_name="$1"
-  local cmd_pattern
-  cmd_pattern="$(sidebar_pane_command_awk_pattern)"
-  tmux list-panes -a -F '#{pane_id}|#{pane_title}|#{pane_current_command}|#{session_name}|#{window_id}' \
-    | awk -F'|' -v target_session="$session_name" -v cmd_pattern="$cmd_pattern" \
-        '(($2 == "Sidebar" || $2 == "tmux-sidebar") && tolower($3) ~ cmd_pattern) && $4 == target_session { print $1 "|" $5 }'
+  local pane_id pane_window pane_session
+  list_sidebar_panes \
+    | while IFS='|' read -r pane_id pane_window; do
+        [ -n "$pane_id" ] || continue
+        pane_session="$(tmux display-message -p -t "$pane_id" '#{session_name}' 2>/dev/null || true)"
+        [ "$pane_session" = "$session_name" ] || continue
+        printf '%s|%s\n' "$pane_id" "$pane_window"
+      done
 }
 
 sync_sidebar_width_from_pane() {
@@ -376,11 +462,11 @@ sync_sidebar_width_from_pane() {
 $pane_details
 EOF
 
-  is_sidebar_pane "$pane_title" "$pane_command" || return 0
+  pane_is_known_sidebar "$pane_id" "$pane_title" "$pane_command" || return 0
   [[ "$pane_width" =~ ^[1-9][0-9]*$ ]] || return 0
 
   set_pane_tree_option width "$pane_width"
-  write_persisted_sidebar_width "$pane_width" || true
+  write_persisted_sidebar_width "$pane_width"
 
   while IFS='|' read -r sidebar_id _; do
     [ -n "$sidebar_id" ] || continue
@@ -393,6 +479,23 @@ EOF
   done <<EOF
 $(list_sidebar_panes)
 EOF
+}
+
+invalidate_sidebar_snapshot_for_resized_pane() {
+  local pane_id="${1:-}"
+  local pane_details pane_title pane_command window_id
+
+  [ -n "$pane_id" ] || return 0
+  pane_details="$(tmux display-message -p -t "$pane_id" '#{pane_title}|#{pane_current_command}|#{window_id}' 2>/dev/null || true)"
+  [ -n "$pane_details" ] || return 0
+
+  IFS='|' read -r pane_title pane_command window_id <<EOF
+$pane_details
+EOF
+
+  pane_is_known_sidebar "$pane_id" "$pane_title" "$pane_command" && return 0
+  [ -n "$(list_sidebar_panes_in_window "$window_id")" ] || return 0
+  clear_sidebar_window_snapshot "$window_id"
 }
 
 clear_sidebar_state_options() {
@@ -468,7 +571,14 @@ signal_sidebar_refresh() {
   for pid_file in "$state_dir"/sidebar-*.pid; do
     [ -e "$pid_file" ] || continue
     pid="$(cat "$pid_file" 2>/dev/null || true)"
-    [ -n "$pid" ] || continue
+    if [ -z "$pid" ] || ! [[ "$pid" =~ ^[0-9]+$ ]]; then
+      rm -f "$pid_file"
+      continue
+    fi
+    if ! kill -0 "$pid" 2>/dev/null; then
+      rm -f "$pid_file"
+      continue
+    fi
     kill -USR1 "$pid" 2>/dev/null || true
   done
 }

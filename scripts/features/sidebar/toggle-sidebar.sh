@@ -7,6 +7,9 @@ SCRIPTS_DIR="$(CDPATH= cd -- "$SCRIPT_DIR/../.." && pwd)"
 ensure_script="$SCRIPT_DIR/ensure-sidebar-pane.sh"
 close_script="$SCRIPT_DIR/close-sidebar.sh"
 
+acquire_sidebar_lifecycle_lock
+trap release_sidebar_lifecycle_lock EXIT
+
 current_window="$(tmux display-message -p '#{window_id}' 2>/dev/null || true)"
 enabled="$(tmux show-options -gv @tmux_sidebar_enabled 2>/dev/null || printf '0\n')"
 sidebar_panes="$(list_sidebar_panes)"

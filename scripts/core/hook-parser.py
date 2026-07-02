@@ -42,7 +42,7 @@ def parse_claude(payload: str) -> tuple[str, str]:
     elif event == "PostToolUseFailure":
         status = "error"
     else:
-        status = "running"
+        status = ""
 
     return status, message
 

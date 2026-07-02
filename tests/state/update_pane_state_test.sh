@@ -36,3 +36,25 @@ bash scripts/features/state/update-pane-state.sh \
 assert_file_contains "$TMUX_SIDEBAR_STATE_DIR/pane-%7.json" '"pane_id":"%7"'
 assert_file_contains "$TMUX_SIDEBAR_STATE_DIR/pane-%7.json" '"app":"codex"'
 assert_file_contains "$TMUX_SIDEBAR_STATE_DIR/pane-%7.json" '"status":"done"'
+
+fail_bin="$TEST_TMP/fail-bin-update-pane-state"
+mkdir -p "$fail_bin"
+cat > "$fail_bin/mv" <<'EOF'
+#!/usr/bin/env bash
+exit 1
+EOF
+chmod +x "$fail_bin/mv"
+
+fake_tmux_register_pane "%9" "work" "@3" "ops" "Claude"
+
+if PATH="$fail_bin:$PATH" bash scripts/features/state/update-pane-state.sh \
+  --pane "%9" \
+  --app claude \
+  --status running \
+  --message "Fail the move"
+then
+  fail "update-pane-state should fail when mv fails"
+fi
+
+temp_state_count="$(find "$TMUX_SIDEBAR_STATE_DIR" -name '.pane-state.*' | wc -l | tr -d ' ')"
+assert_eq "$temp_state_count" "0"

@@ -14,6 +14,7 @@ if [ -n "$target_pane" ]; then
   tmux wait-for -L "$width_sync_lock"
   trap 'tmux wait-for -U "$width_sync_lock" 2>/dev/null || true' EXIT
   sync_sidebar_width_from_pane "$target_pane"
+  invalidate_sidebar_snapshot_for_resized_pane "$target_pane"
 fi
 
 signal_sidebar_refresh

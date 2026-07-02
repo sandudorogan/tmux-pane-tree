@@ -62,6 +62,7 @@ _cached_shortcuts: dict[str, str] | None = None
 _cached_shortcuts_at: float = 0.0
 JUMP_LOCATION_TMUX = "tmux"
 JUMP_LOCATION_SIDEBAR = "sidebar"
+REFRESH_SIGNAL_DEBOUNCE_SECONDS = 0.05
 JumpEntry = tuple[str, str]
 
 
@@ -305,6 +306,7 @@ def run_interactive(stdscr) -> None:
     scroll_offset = 0
     user_scrolled = False
     needs_render = True
+    pending_signal_refresh_at = 0.0
     search_mode = False
     search_query = ""
     search_matches: set[int] = set()
@@ -316,7 +318,14 @@ def run_interactive(stdscr) -> None:
         signaled = _refresh_requested
         if signaled:
             _refresh_requested = False
-        if next_refresh_at == 0.0 or signaled or now >= next_refresh_at:
+            action_path = _action_file_path()
+            if action_path is not None and action_path.exists():
+                pending_signal_refresh_at = now
+            else:
+                pending_signal_refresh_at = now + REFRESH_SIGNAL_DEBOUNCE_SECONDS
+        signal_refresh_due = pending_signal_refresh_at != 0.0 and now >= pending_signal_refresh_at
+        if next_refresh_at == 0.0 or signal_refresh_due or now >= next_refresh_at:
+            pending_signal_refresh_at = 0.0
             prev_pane = selected_pane_id
             rows, pane_rows, shortcuts, selected_pane_id = load_view_state(selected_pane_id)
             has_focus = sidebar_has_focus()

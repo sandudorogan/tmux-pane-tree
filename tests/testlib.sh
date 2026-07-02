@@ -77,6 +77,7 @@ pane_title='$pane_title'
 pane_current_command='$pane_current_command'
 window_index='$window_index'
 pane_current_path='$pane_current_path'
+tmux_sidebar_owned='0'
 EOF
 }
 
@@ -113,6 +114,7 @@ pane_title=$SIDEBAR_PANE_TITLE
 pane_current_command=python3
 window_index=$sidebar_window_index
 pane_current_path=
+tmux_sidebar_owned=1
 EOF
   printf '%s|%s|%s\n' "$pane_id" "$SIDEBAR_PANE_TITLE" "$target_window_id" >> "$TEST_TMUX_DATA_DIR/toggle_panes.txt"
 }
@@ -128,6 +130,7 @@ fake_tmux_no_sidebar() {
   rm -f "$TEST_TMUX_DATA_DIR/next_sidebar_pane_id.txt"
   rm -f "$TEST_TMUX_DATA_DIR/fail_allow_set_title.txt"
   rm -f "$TEST_TMUX_DATA_DIR/split_window_pane_title.txt"
+  rm -f "$TEST_TMUX_DATA_DIR/disable_enabled_on_wait_for_lock.txt"
 }
 
 fake_tmux_sidebar_count() {
@@ -263,6 +266,7 @@ case "$command_name" in
     result="${result//\#\{pane_current_command\}/$pane_current_command}"
     result="${result//\#\{pane_current_path\}/${pane_current_path:-}}"
     result="${result//\#\{pane_width\}/${pane_width:-}}"
+    result="${result//\#\{@tmux_sidebar_owned\}/${tmux_sidebar_owned:-}}"
     layout_file="$data_dir/window_layout_${window_id//@/_}.txt"
     if [ -f "$layout_file" ]; then
       window_layout="$(cat "$layout_file")"
@@ -291,7 +295,7 @@ case "$command_name" in
           ;;
       esac
     done
-    if [[ "$format" == '#{pane_id}|#{pane_title}' || "$format" == '#{pane_id}|#{pane_title}|#{window_id}' || "$format" == '#{pane_id}|#{pane_title}|#{pane_current_command}|#{window_id}' || "$format" == '#{pane_id}|#{pane_title}|#{session_name}|#{window_id}' || "$format" == '#{pane_id}|#{pane_title}|#{pane_current_command}|#{session_name}|#{window_id}' || "$format" == '#{pane_id}|#{pane_active}' || "$format" == '#{pane_id}|#{pane_current_path}' || "$format" == '#{pane_id}|#{pane_current_path}|#{pane_active}' || "$format" == '#{pane_id}' || "$format" == '#{session_name}' ]]; then
+    if [[ "$format" == '#{pane_id}|#{pane_title}' || "$format" == '#{pane_id}|#{pane_title}|#{window_id}' || "$format" == '#{pane_id}|#{pane_title}|#{pane_current_command}|#{window_id}' || "$format" == '#{pane_id}|#{pane_title}|#{session_name}|#{window_id}' || "$format" == '#{pane_id}|#{pane_title}|#{pane_current_command}|#{session_name}|#{window_id}' || "$format" == '#{pane_id}|#{pane_active}' || "$format" == '#{pane_id}|#{pane_current_path}' || "$format" == '#{pane_id}|#{pane_current_path}|#{pane_active}' || "$format" == '#{pane_id}|#{@tmux_sidebar_owned}|#{window_id}' || "$format" == '#{pane_id}' || "$format" == '#{session_name}' ]]; then
       found="0"
       if [ "$format" = '#{session_name}' ]; then
         if [ -z "$target_window" ] && [ -s "$data_dir/list_panes.txt" ]; then
@@ -367,6 +371,9 @@ case "$command_name" in
               printf '%s|%s|0\n' "$pane_id" "${pane_current_path:-}"
             fi
             ;;
+          '#{pane_id}|#{@tmux_sidebar_owned}|#{window_id}')
+            printf '%s|%s|%s\n' "$pane_id" "${tmux_sidebar_owned:-}" "$window_id"
+            ;;
           '#{pane_id}')
             printf '%s\n' "$pane_id"
             ;;
@@ -439,6 +446,7 @@ window_id=$window_id
 window_name=$window_name
 pane_title=$new_pane_title
 pane_current_command=python3
+tmux_sidebar_owned=0
 METAEOF
     printf '%%%s|%s|%s\n' "$next_pane_id" "$new_pane_title" "$window_id" >> "$data_dir/toggle_panes.txt"
     printf '%%%s\n' "$next_pane_id"
@@ -559,6 +567,13 @@ PY
     ;;
   wait-for)
     printf 'wait-for %s\n' "$*" >> "$data_dir/commands.log"
+    if [ "${1:-}" = "-L" ] && [ -f "$data_dir/disable_enabled_on_wait_for_lock.txt" ]; then
+      lock_name="$(cat "$data_dir/disable_enabled_on_wait_for_lock.txt")"
+      if [ -z "$lock_name" ] || [ "$lock_name" = "${2:-}" ]; then
+        printf '0\n' > "$data_dir/option__tmux_sidebar_enabled.txt"
+        rm -f "$data_dir/disable_enabled_on_wait_for_lock.txt"
+      fi
+    fi
     ;;
   set-option)
     printf 'set-option %s\n' "$*" >> "$data_dir/commands.log"
@@ -592,6 +607,30 @@ PY
       esac
     done
     option_file="$data_dir/option_${option_name//@/_}.txt"
+    if [ "$scope" = "-p" ] && [ "$option_name" = "@tmux_sidebar_owned" ] && [ -n "$target" ]; then
+      meta_file="$data_dir/pane_${target//%/}.meta"
+      if [ -f "$meta_file" ]; then
+        python3 - "$meta_file" "$value" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+value = sys.argv[2]
+updated = []
+replaced = False
+for line in path.read_text().splitlines():
+    if line.startswith("tmux_sidebar_owned="):
+        updated.append(f"tmux_sidebar_owned={value}")
+        replaced = True
+    else:
+        updated.append(line)
+if not replaced:
+    updated.append(f"tmux_sidebar_owned={value}")
+path.write_text("\n".join(updated) + "\n")
+PY
+      fi
+      exit 0
+    fi
     if [ "$scope" = "-p" ] && [ "$option_name" = "allow-set-title" ] && [ -f "$data_dir/fail_allow_set_title.txt" ]; then
       printf 'invalid option: %s\n' "$option_name" >&2
       exit 1

@@ -47,6 +47,11 @@ export TEST_HOOK_CAPTURE="$TEST_TMP/claude-hook-submit.txt"
 printf '%s' '{"hook_event_name":"UserPromptSubmit"}' | bash scripts/features/hooks/hook-claude.sh
 assert_file_contains "$TEST_HOOK_CAPTURE" '--status running'
 
+export TEST_HOOK_CAPTURE="$TEST_TMP/claude-hook-unknown.txt"
+rm -f "$TEST_HOOK_CAPTURE"
+printf '%s' '{"hook_event_name":"Heartbeat","message":"Still alive"}' | bash scripts/features/hooks/hook-claude.sh
+[ ! -f "$TEST_HOOK_CAPTURE" ] || fail "unknown claude events should be skipped"
+
 export TEST_HOOK_CAPTURE="$TEST_TMP/claude-hook-subagent-stop.txt"
 rm -f "$TEST_HOOK_CAPTURE"
 printf '%s' '{"hook_event_name":"SubagentStop","message":"Finished subagent task"}' | bash scripts/features/hooks/hook-claude.sh
@@ -186,6 +191,11 @@ export TEST_HOOK_CAPTURE="$TEST_TMP/pi-hook-needs-input.txt"
 printf '%s' '{"event":"needs_input","message":"Need approval"}' | bash scripts/features/hooks/hook-pi.sh
 assert_file_contains "$TEST_HOOK_CAPTURE" '--status needs-input'
 
+export TEST_HOOK_CAPTURE="$TEST_TMP/pi-hook-unknown.txt"
+rm -f "$TEST_HOOK_CAPTURE"
+printf '%s' '{"event":"heartbeat","message":"Still alive"}' | bash scripts/features/hooks/hook-pi.sh
+[ ! -f "$TEST_HOOK_CAPTURE" ] || fail "unknown pi events should be skipped"
+
 export TEST_HOOK_CAPTURE="$TEST_TMP/kiro-hook.txt"
 printf '%s' '{"hook_event_name":"stop","message":"Finished"}' | bash scripts/features/hooks/hook-kiro.sh
 assert_file_contains "$TEST_HOOK_CAPTURE" '--app kiro'
@@ -200,6 +210,11 @@ assert_file_contains "$TEST_HOOK_CAPTURE" '--message write'
 export TEST_HOOK_CAPTURE="$TEST_TMP/kiro-hook-idle.txt"
 printf '%s' '{"hook_event_name":"agentSpawn"}' | bash scripts/features/hooks/hook-kiro.sh
 assert_file_contains "$TEST_HOOK_CAPTURE" '--status idle'
+
+export TEST_HOOK_CAPTURE="$TEST_TMP/kiro-hook-unknown.txt"
+rm -f "$TEST_HOOK_CAPTURE"
+printf '%s' '{"hook_event_name":"heartbeat","message":"Still alive"}' | bash scripts/features/hooks/hook-kiro.sh
+[ ! -f "$TEST_HOOK_CAPTURE" ] || fail "unknown kiro events should be skipped"
 
 export TEST_HOOK_CAPTURE="$TEST_TMP/cursor-hook-session-start.txt"
 rm -f "$TEST_HOOK_CAPTURE"

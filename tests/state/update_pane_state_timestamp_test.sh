@@ -19,3 +19,19 @@ bash scripts/features/state/update-pane-state.sh \
   --updated-at 100
 
 assert_file_contains "$TMUX_SIDEBAR_STATE_DIR/pane-%7.json" '"status":"done"'
+
+bash scripts/features/state/update-pane-state.sh \
+  --pane "%7" \
+  --app claude \
+  --status running \
+  --updated-at 200
+
+assert_file_contains "$TMUX_SIDEBAR_STATE_DIR/pane-%7.json" '"status":"done"'
+
+bash scripts/features/state/update-pane-state.sh \
+  --pane "%7" \
+  --app claude \
+  --status needs-input \
+  --updated-at 200
+
+assert_file_contains "$TMUX_SIDEBAR_STATE_DIR/pane-%7.json" '"status":"needs-input"'

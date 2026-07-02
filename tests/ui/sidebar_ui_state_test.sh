@@ -202,6 +202,18 @@ output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 assert_contains "$output" 'U cursor ❌'
 
 fake_tmux_set_tree <<'EOF'
+work|@1|editor|%119|cursor|project: done|1
+EOF
+cat > "$TMUX_SIDEBAR_STATE_DIR/pane-%119.json" <<'EOF'
+{"pane_id":"%119","app":"cursor","status":"running","updated_at":100}
+EOF
+
+output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
+
+assert_contains "$output" 'U cursor ⏳'
+assert_not_contains "$output" 'U cursor ✅'
+
+fake_tmux_set_tree <<'EOF'
 work|@1|zsh|%116|zsh|zsh|1
 EOF
 cat > "$TMUX_SIDEBAR_STATE_DIR/pane-%116.json" <<'EOF'
@@ -246,6 +258,21 @@ EOF
 output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
 assert_contains "$output" 'X codex ✅'
+
+fake_tmux_set_tree <<'EOF'
+work|@1|editor|%901|codex-aarch64-apple-darwin|codex --full-auto|1
+EOF
+cat > "$TMUX_SIDEBAR_STATE_DIR/pane-%901.json" <<'EOF'
+{"pane_id":"%901","app":"codex","status":"done","updated_at":100}
+EOF
+fake_tmux_set_capture "%901" <<'EOF'
+• Working (15s • esc to interrupt)
+EOF
+
+output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
+
+assert_contains "$output" 'X codex ⏳'
+assert_not_contains "$output" 'X codex ✅'
 
 fake_tmux_set_tree <<'EOF'
 work|@1|editor|%91|codex-aarch64-apple-darwin|tmux-sidebar|1

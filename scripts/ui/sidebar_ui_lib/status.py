@@ -285,18 +285,19 @@ def effective_pane_status(pane_id: str, command: str, title: str, state: dict | 
 
     status = str((state or {}).get("status", "")).strip().lower()
     if live_app == "codex":
-        if status in ("running", "needs-input", "error", "done"):
-            return status
         terminal_status = codex_terminal_status(pane_id)
         if terminal_status:
             return terminal_status
+        if status in ("running", "needs-input", "error", "done"):
+            return status
         return ""
 
     if status == "idle":
         return ""
-    title_status = claude_title_status(title)
-    if title_status:
-        return title_status
+    if live_app == "claude":
+        title_status = claude_title_status(title)
+        if title_status:
+            return title_status
     if status in ("running", "needs-input", "error", "done"):
         return status
     return ""

@@ -208,7 +208,10 @@ def render_screen(
     width = max(0, curses.COLS - 1)
     has_search_bar = search_mode or bool(search_query)
     visible_lines = curses.LINES - (1 if has_search_bar else 0)
-    stdscr.erase()
+    if width > 0:
+        blank_line = " " * width
+        for y in range(max(0, curses.LINES)):
+            stdscr.addnstr(y, 0, blank_line, width)
     rendered = render_rows(rows, selected_pane_id, width)
     selected_row = find_selected_row_index(rows, selected_pane_id)
     match_attr = getattr(curses, "A_ITALIC", curses.A_UNDERLINE)

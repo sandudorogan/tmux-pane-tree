@@ -7,8 +7,11 @@ SCRIPTS_DIR="$(CDPATH= cd -- "$SCRIPT_DIR/../.." && pwd)"
 
 target_pane="${1:-}"
 target_window="${2:-}"
-enabled="$(tmux show-options -gv @tmux_sidebar_enabled 2>/dev/null || printf '0\n')"
-[ "$enabled" = "1" ] || exit 0
+sidebar_enabled || exit 0
+
+acquire_sidebar_lifecycle_lock
+trap release_sidebar_lifecycle_lock EXIT
+sidebar_enabled || exit 0
 
 sidebar_panes="$(
   list_sidebar_panes

@@ -79,3 +79,22 @@ bash scripts/features/sidebar/on-pane-focus.sh "%5" "@1"
 
 assert_file_contains "$TMUX_SIDEBAR_STATE_DIR/pane-%5.json" '"status":"idle"'
 assert_file_contains "$TMUX_SIDEBAR_STATE_DIR/pane-%5.json" '"app":"claude"'
+
+fake_tmux_no_sidebar
+fake_tmux_register_pane "%7" "work" "@1" "editor" "● project: done" "2.1.76"
+rm -f "$TMUX_SIDEBAR_STATE_DIR/pane-%7.json"
+fail_bin="$TEST_TMP/fail-bin-on-pane-focus"
+mkdir -p "$fail_bin"
+cat > "$fail_bin/mv" <<'EOF'
+#!/usr/bin/env bash
+exit 1
+EOF
+chmod +x "$fail_bin/mv"
+
+if PATH="$fail_bin:$PATH" bash scripts/features/sidebar/on-pane-focus.sh "%7" "@1"
+then
+  fail "on-pane-focus should fail when mv fails"
+fi
+
+temp_state_count="$(find "$TMUX_SIDEBAR_STATE_DIR" -name '.pane-state.*' | wc -l | tr -d ' ')"
+assert_eq "$temp_state_count" "0"

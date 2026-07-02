@@ -31,3 +31,17 @@ rm -f "$TEST_TMUX_DATA_DIR/pane_2.meta"
 bash scripts/features/sidebar/toggle-sidebar.sh
 
 assert_file_not_contains "$TEST_TMUX_DATA_DIR/commands.log" 'select-layout -t @1 layout-before'
+
+fake_tmux_no_sidebar
+fake_tmux_register_pane "%1" "work" "@1" "editor" "nvim"
+fake_tmux_register_pane "%2" "work" "@1" "editor" "shell" "zsh"
+fake_tmux_set_window_layout "@1" 'layout-before'
+
+bash scripts/features/sidebar/toggle-sidebar.sh
+: > "$TEST_TMUX_DATA_DIR/commands.log"
+
+bash scripts/features/sidebar/notify-sidebar.sh %2
+bash scripts/features/sidebar/toggle-sidebar.sh
+
+assert_file_not_contains "$TEST_TMUX_DATA_DIR/commands.log" 'select-layout -t @1 layout-before'
+assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'set-option -g -u @tmux_sidebar_layout_w1'

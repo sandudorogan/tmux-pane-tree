@@ -142,6 +142,25 @@ bash scripts/features/sidebar/ensure-sidebar-pane.sh
 assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'split-window -t %1 -h -b -d -f -l 28'
 
 fake_tmux_no_sidebar
+fake_tmux_register_pane "%1" "work" "@1" "editor" "nvim"
+printf '1\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_enabled.txt"
+printf '@tmux_sidebar_ensure_w1\n' > "$TEST_TMUX_DATA_DIR/disable_enabled_on_wait_for_lock.txt"
+
+bash scripts/features/sidebar/ensure-sidebar-pane.sh
+
+assert_file_not_contains "$TEST_TMUX_DATA_DIR/commands.log" 'split-window'
+
+fake_tmux_no_sidebar
+fake_tmux_register_pane "%1" "work" "@1" "editor" "nvim"
+fake_tmux_register_pane "%2" "work" "@1" "scratch" "Sidebar" "python3"
+printf '1\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_enabled.txt"
+
+bash scripts/features/sidebar/ensure-sidebar-pane.sh
+
+assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'split-window -t %1 -h -b -d -f -l 25'
+assert_eq "$(fake_tmux_sidebar_count)" "1"
+
+fake_tmux_no_sidebar
 export TMUX_PANE_TREE_STATE_DIR="$TEST_TMP/state"
 mkdir -p "$TMUX_PANE_TREE_STATE_DIR"
 printf '33\n' > "$TMUX_PANE_TREE_STATE_DIR/sidebar-width.txt"

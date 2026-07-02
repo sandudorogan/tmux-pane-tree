@@ -6,9 +6,13 @@ SCRIPTS_DIR="$(CDPATH= cd -- "$SCRIPT_DIR/../.." && pwd)"
 . "$SCRIPTS_DIR/core/lib.sh"
 pane_id="${1:-}"
 window_id="${2:-}"
-enabled="$(tmux show-options -gv @tmux_sidebar_enabled 2>/dev/null || printf '0\n')"
 
-if [ "$enabled" = "1" ] && [ -n "$pane_id" ] && [ -n "$window_id" ]; then
+if sidebar_enabled && [ -n "$pane_id" ] && [ -n "$window_id" ]; then
+  acquire_sidebar_lifecycle_lock
+  trap release_sidebar_lifecycle_lock EXIT
+fi
+
+if sidebar_enabled && [ -n "$pane_id" ] && [ -n "$window_id" ]; then
   tracked_pane_option="$(sidebar_window_option "pane" "$window_id")"
   tracked_pane="$(tmux show-options -gv "$tracked_pane_option" 2>/dev/null || true)"
 
