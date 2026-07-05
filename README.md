@@ -34,12 +34,13 @@ Press `Enter` to jump to the selected pane.
 
 **Pane icons and agent badges** — per-pane app icons and live status updates in real time:
 
-| Badge | Status      | Meaning                        |
-| :---: | ----------- | ------------------------------ |
-| `⏳`  | running     | Agent is working               |
-| `❓`  | needs-input | Waiting for permission / input |
-| `✅`  | done        | Finished                       |
-| `❌`  | error       | Something went wrong           |
+| Badge | Status           | Meaning                        |
+| :---: | ---------------- | ------------------------------ |
+| `⏳`  | running          | Agent is working               |
+| `↳⏳` | subagent-running | Agent is delegating to subagents |
+| `❓`  | needs-input      | Waiting for permission / input |
+| `✅`  | done             | Finished                       |
+| `❌`  | error            | Something went wrong           |
 
 `needs-input` clears when you focus the pane. Finished panes keep their `done` state.
 
@@ -220,17 +221,19 @@ set -g @tmux_pane_tree_hide_panes on     # default: off
 ### Badge icons
 
 Badges follow the active icon theme. The default `ascii` and `unicode` paths
-use `⏳`, `❓`, `✅`, and `❌`. When the active icon theme resolves to
+use `⏳`, `↳⏳`, `❓`, `✅`, and `❌`. When the active icon theme resolves to
 `nerdfont`, badges switch to `nf-fa-hourglass_2`, `nf-fa-circle_question`,
-`nf-fa-circle_check`, and `nf-oct-stop`.
+`nf-fa-circle_check`, and `nf-oct-stop`, with the same `↳` prefix while
+subagents run.
 
 You can still override any status badge explicitly:
 
 ```tmux
-set -g @tmux_pane_tree_badge_running      "⏳"   # default: ⏳
-set -g @tmux_pane_tree_badge_needs_input  "❓"   # default: ❓
-set -g @tmux_pane_tree_badge_done         "✅"   # default: ✅
-set -g @tmux_pane_tree_badge_error        "❌"   # default: ❌
+set -g @tmux_pane_tree_badge_running           "⏳"   # default: ⏳
+set -g @tmux_pane_tree_badge_subagent_running  "↳⏳"  # default: ↳⏳
+set -g @tmux_pane_tree_badge_needs_input       "❓"   # default: ❓
+set -g @tmux_pane_tree_badge_done              "✅"   # default: ✅
+set -g @tmux_pane_tree_badge_error             "❌"   # default: ❌
 ```
 
 ### Pane icons
@@ -338,6 +341,7 @@ set -g @tmux_pane_tree_install_agent_hooks 1   # default: 0
 | `@tmux_pane_tree_hide_panes`            |  `off`  | Show only sessions and windows   |
 | `@tmux_pane_tree_scrolloff`             |   `8`   | Cursor scroll margin             |
 | `@tmux_pane_tree_badge_running`         |  `⏳`   | Badge for running status         |
+| `@tmux_pane_tree_badge_subagent_running` | `↳⏳`  | Badge for subagent-running status |
 | `@tmux_pane_tree_badge_needs_input`     |  `❓`   | Badge for needs-input status     |
 | `@tmux_pane_tree_badge_done`            |  `✅`   | Badge for done status            |
 | `@tmux_pane_tree_badge_error`           |  `❌`   | Badge for error status           |

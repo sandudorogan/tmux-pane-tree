@@ -2,6 +2,12 @@
 
 All notable project versions are documented here.
 
+## Unreleased
+
+- Claude SubagentStart/Stop hooks now maintain a per-pane subagent count and show a dedicated `↳`-prefixed badge while subagents run, instead of being suppressed. The count resets at turn and session boundaries so a lost stop event can't pin the badge.
+- Hook wrappers opt into subagent lifecycle events via `HOOK_SUBAGENT_TRACKING`; other agents keep the previous suppression behavior.
+- The built-in hook installer now keeps only the three most recent backups per config file.
+
 ## 0.3.3
 
 - Fixed macOS+fish bug where Ctrl-b t stacked new sidebars because detection only matched `python` as `pane_current_command`; allowlist now covers common shells while still excluding agent CLIs like codex/cursor.
