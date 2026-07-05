@@ -42,6 +42,9 @@ assert_eq "allow" "$(run_filter '{"app":"codex","event":"agent-turn-start","sess
 assert_file_contains "$STATE_DIR/agent-hook-state.json" '"codex:worker-1":'
 assert_file_not_contains "$STATE_DIR/agent-hook-state.json" '"claude:sub-1":'
 
+assert_eq "allow" "$(run_filter_from_metadata claude Stop '{"hook_event_name":"Stop","session_id":"main-2","permission_mode":"delegate"}')"
+assert_file_not_contains "$STATE_DIR/agent-hook-state.json" '"claude:main-2":'
+
 assert_eq "suppress" "$(run_filter_from_metadata codex agent-turn-complete '{"session_id":"worker-2","permission_mode":"delegate","summary":"Finished task"}')"
 assert_file_contains "$STATE_DIR/agent-hook-state.json" '"codex:worker-2":'
 

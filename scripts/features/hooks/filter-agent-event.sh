@@ -160,11 +160,9 @@ event = str(metadata.get("event") or "").strip()
 session_id = str(metadata.get("session_id") or "").strip()
 explicit_subagent_event = bool(metadata.get("explicit_subagent_event"))
 delegate_session = bool(metadata.get("delegate_session"))
-permission_mode = str(metadata.get("permission_mode") or "").strip().lower()
 
 state_path = Path(os.environ["HOOK_SESSION_STATE_FILE"])
 event_kind = classify_event(metadata)
-delegate_session = delegate_session or permission_mode in {"delegate", "dangerouslyskippermissions"}
 
 with with_locked_state(state_path):
     now = int(time.time())
