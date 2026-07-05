@@ -7,6 +7,11 @@ All notable project versions are documented here.
 - Claude SubagentStart/Stop hooks now maintain a per-pane subagent count and show a dedicated `↳`-prefixed badge while subagents run, instead of being suppressed. The count resets at turn and session boundaries so a lost stop event can't pin the badge.
 - Hook wrappers opt into subagent lifecycle events via `HOOK_SUBAGENT_TRACKING`; other agents keep the previous suppression behavior.
 - The built-in hook installer now keeps only the three most recent backups per config file.
+- Recognize Claude Code builds that report their version with underscores (`2_1_201`) as `pane_current_command`, restoring claude detection for panes without hook state.
+- A `✳`-prefixed pane title now marks claude as idle, clearing stale running badges left behind by `/compact`, aborted turns, or lost Stop events.
+- Stopped treating a `delegate` permission mode as a subagent marker for non-codex apps; claude sessions in delegate mode no longer have their completion events suppressed.
+- Keep the cursor label on idle cursor-agent panes while the pane still runs the command captured in hook state, instead of falling back to `node`.
+- `hook-cursor.sh` no longer uses `mapfile`, so it survives being run by the system bash 3.2.
 
 ## 0.3.3
 
