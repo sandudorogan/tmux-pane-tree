@@ -667,6 +667,92 @@ output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
 assert_contains "$output" 'C claude ❌'
 
+fake_tmux_set_tree <<'EOF'
+work|@1|editor|%320|2_1_201|✳ Review project for improvements|1
+EOF
+rm -f "$TMUX_SIDEBAR_STATE_DIR"/pane-*.json
+
+output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
+
+assert_contains "$output" 'C claude'
+assert_not_contains "$output" '2_1_201'
+
+fake_tmux_set_tree <<'EOF'
+work|@1|editor|%321|2_1_201|✳ Review project for improvements|1
+EOF
+rm -f "$TMUX_SIDEBAR_STATE_DIR"/pane-*.json
+cat > "$TMUX_SIDEBAR_STATE_DIR/pane-%321.json" <<'EOF'
+{"pane_id":"%321","app":"claude","status":"running","updated_at":100}
+EOF
+
+output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
+
+assert_contains "$output" 'C claude'
+assert_not_contains "$output" '⏳'
+
+fake_tmux_set_tree <<'EOF'
+work|@1|editor|%322|2_1_201|✳ Review project for improvements|1
+EOF
+rm -f "$TMUX_SIDEBAR_STATE_DIR"/pane-*.json
+cat > "$TMUX_SIDEBAR_STATE_DIR/pane-%322.json" <<'EOF'
+{"pane_id":"%322","app":"claude","status":"subagent-running","subagent_count":1,"updated_at":100}
+EOF
+
+output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
+
+assert_contains "$output" 'C claude'
+assert_not_contains "$output" '⏳'
+
+fake_tmux_set_tree <<'EOF'
+work|@1|editor|%323|2_1_201|✳ Review project for improvements|1
+EOF
+rm -f "$TMUX_SIDEBAR_STATE_DIR"/pane-*.json
+cat > "$TMUX_SIDEBAR_STATE_DIR/pane-%323.json" <<'EOF'
+{"pane_id":"%323","app":"claude","status":"done","updated_at":100}
+EOF
+
+output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
+
+assert_contains "$output" 'C claude ✅'
+
+fake_tmux_set_tree <<'EOF'
+work|@1|editor|%324|2_1_201|✳ Review project for improvements|1
+EOF
+rm -f "$TMUX_SIDEBAR_STATE_DIR"/pane-*.json
+cat > "$TMUX_SIDEBAR_STATE_DIR/pane-%324.json" <<'EOF'
+{"pane_id":"%324","app":"claude","status":"needs-input","updated_at":100}
+EOF
+
+output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
+
+assert_contains "$output" 'C claude ❓'
+
+fake_tmux_set_tree <<'EOF'
+work|@1|editor|%330|node|Plan Mode Migration - ✅ Ready|1
+EOF
+rm -f "$TMUX_SIDEBAR_STATE_DIR"/pane-*.json
+cat > "$TMUX_SIDEBAR_STATE_DIR/pane-%330.json" <<'EOF'
+{"pane_id":"%330","app":"cursor","status":"idle","pane_current_command":"node","updated_at":100}
+EOF
+
+output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
+
+assert_contains "$output" 'U cursor'
+assert_not_contains "$output" 'N node'
+
+fake_tmux_set_tree <<'EOF'
+work|@1|editor|%331|zsh|Plan Mode Migration - ✅ Ready|1
+EOF
+rm -f "$TMUX_SIDEBAR_STATE_DIR"/pane-*.json
+cat > "$TMUX_SIDEBAR_STATE_DIR/pane-%331.json" <<'EOF'
+{"pane_id":"%331","app":"cursor","status":"idle","pane_current_command":"node","updated_at":100}
+EOF
+
+output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
+
+assert_contains "$output" 'zsh'
+assert_not_contains "$output" 'cursor'
+
 unset TMUX_SIDEBAR_STATE_DIR
 export TMUX_PANE_TREE_STATE_DIR="$TEST_TMP/pane-tree-state-alias"
 mkdir -p "$TMUX_PANE_TREE_STATE_DIR"

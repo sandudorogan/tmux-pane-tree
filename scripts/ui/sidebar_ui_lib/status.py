@@ -17,7 +17,9 @@ from .icon_config import (
 )
 
 
-SEMVER_PATTERN = re.compile(r"^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$")
+# Claude Code reports its version as pane_current_command; newer builds use
+# underscores ("2_1_201") instead of dots.
+SEMVER_PATTERN = re.compile(r"^\d+[._]\d+[._]\d+(?:[-+][0-9A-Za-z.-]+)?$")
 NON_AGENT_COMMANDS = {
     "",
     "ash",
@@ -202,6 +204,15 @@ def state_agent_app(command: str, title: str, state: dict | None) -> str:
     if app == "cursor":
         if status and status != "idle":
             return "cursor"
+        # cursor-agent runs under a generic command like "node", so an idle
+        # session is still cursor as long as the pane runs the same command
+        # the hook captured when it wrote the state.
+        if (
+            state_command
+            and not should_preserve_live_label(command, title)
+            and normalize_token(command) == normalize_token(state_command)
+        ):
+            return "cursor"
         return ""
     state_matches_codex = looks_like_codex(state_command) or looks_like_codex(state_title)
     if app == "codex" and status == "idle":
@@ -230,6 +241,8 @@ def claude_title_status(title: str) -> str:
         }.get(suffix, "")
     if re.match(r"^[\u2800-\u28FF]", title.strip()):
         return "running"
+    if title.strip().startswith("\u2733"):
+        return "idle"
     return ""
 
 
@@ -302,6 +315,13 @@ def effective_pane_status(pane_id: str, command: str, title: str, state: dict | 
         # delegated, so the more specific subagent status wins.
         if title_status == "running" and status == "subagent-running":
             title_status = status
+        if title_status == "idle":
+            # A ✳ title marks an idle claude, so a running state here is stale
+            # (aborted turn, /compact, lost Stop). Terminal statuses like done
+            # or needs-input still come from state.
+            if status in ("running", "subagent-running"):
+                return ""
+            title_status = ""
         if title_status:
             return title_status
     if status in ACTIVE_STATUSES:
