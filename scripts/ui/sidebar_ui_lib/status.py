@@ -40,10 +40,12 @@ NON_AGENT_COMMANDS = {
 }
 BADGE_OPTION_SUFFIXES: dict[str, str] = {
     "running": "badge_running",
+    "subagent-running": "badge_subagent_running",
     "needs-input": "badge_needs_input",
     "done": "badge_done",
     "error": "badge_error",
 }
+ACTIVE_STATUSES = {"running", "subagent-running", "needs-input", "error", "done"}
 
 _badge_cache: dict[str, str] | None = None
 _icon_cache: dict[str, str] | None = None
@@ -288,7 +290,7 @@ def effective_pane_status(pane_id: str, command: str, title: str, state: dict | 
         terminal_status = codex_terminal_status(pane_id)
         if terminal_status:
             return terminal_status
-        if status in ("running", "needs-input", "error", "done"):
+        if status in ACTIVE_STATUSES:
             return status
         return ""
 
@@ -296,9 +298,13 @@ def effective_pane_status(pane_id: str, command: str, title: str, state: dict | 
         return ""
     if live_app == "claude":
         title_status = claude_title_status(title)
+        # A spinner title only means "busy"; state knows the busy work is
+        # delegated, so the more specific subagent status wins.
+        if title_status == "running" and status == "subagent-running":
+            title_status = status
         if title_status:
             return title_status
-    if status in ("running", "needs-input", "error", "done"):
+    if status in ACTIVE_STATUSES:
         return status
     return ""
 

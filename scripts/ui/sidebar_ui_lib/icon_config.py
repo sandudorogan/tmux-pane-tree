@@ -2,12 +2,14 @@ from __future__ import annotations
 
 DEFAULT_BADGES: dict[str, str] = {
     "running": "⏳",
+    "subagent-running": "↳⏳",
     "needs-input": "❓",
     "done": "✅",
     "error": "❌",
 }
 NERD_FONT_BADGES: dict[str, str] = {
     "running": "\uf252",
+    "subagent-running": "↳\uf252",
     "needs-input": "\uf059",
     "done": "\uf05d",
     "error": "\uf46e",

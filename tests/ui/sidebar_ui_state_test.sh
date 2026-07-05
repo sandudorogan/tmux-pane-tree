@@ -136,6 +136,28 @@ output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 assert_contains "$output" 'C claude ⏳'
 
 fake_tmux_set_tree <<'EOF'
+work|@1|editor|%100|python3|assistant runner|1
+EOF
+cat > "$TMUX_SIDEBAR_STATE_DIR/pane-%100.json" <<'EOF'
+{"pane_id":"%100","app":"claude","status":"subagent-running","subagent_count":1,"updated_at":100}
+EOF
+
+output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
+
+assert_contains "$output" 'C claude ↳⏳'
+
+fake_tmux_set_tree <<'EOF'
+work|@1|editor|%101|python3|⠋ delegating work|1
+EOF
+cat > "$TMUX_SIDEBAR_STATE_DIR/pane-%101.json" <<'EOF'
+{"pane_id":"%101","app":"claude","status":"subagent-running","subagent_count":1,"updated_at":100}
+EOF
+
+output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
+
+assert_contains "$output" 'C claude ↳⏳'
+
+fake_tmux_set_tree <<'EOF'
 work|@1|editor|%11|node|repo worker|1
 EOF
 cat > "$TMUX_SIDEBAR_STATE_DIR/pane-%11.json" <<'EOF'
