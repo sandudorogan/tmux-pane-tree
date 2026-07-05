@@ -58,3 +58,62 @@ fi
 
 temp_state_count="$(find "$TMUX_SIDEBAR_STATE_DIR" -name '.pane-state.*' | wc -l | tr -d ' ')"
 assert_eq "$temp_state_count" "0"
+
+fake_tmux_register_pane "%10" "work" "@4" "agents" "Claude"
+
+bash scripts/features/state/update-pane-state.sh \
+  --pane "%10" \
+  --app claude \
+  --status running \
+  --subagent-event start \
+  --updated-at 300
+
+assert_file_contains "$TMUX_SIDEBAR_STATE_DIR/pane-%10.json" '"status":"subagent-running"'
+assert_file_contains "$TMUX_SIDEBAR_STATE_DIR/pane-%10.json" '"subagent_count":1'
+
+bash scripts/features/state/update-pane-state.sh \
+  --pane "%10" \
+  --app claude \
+  --status running \
+  --subagent-event start \
+  --updated-at 301
+
+assert_file_contains "$TMUX_SIDEBAR_STATE_DIR/pane-%10.json" '"subagent_count":2'
+
+bash scripts/features/state/update-pane-state.sh \
+  --pane "%10" \
+  --app claude \
+  --status running \
+  --subagent-event stop \
+  --updated-at 302
+
+assert_file_contains "$TMUX_SIDEBAR_STATE_DIR/pane-%10.json" '"status":"subagent-running"'
+assert_file_contains "$TMUX_SIDEBAR_STATE_DIR/pane-%10.json" '"subagent_count":1'
+
+bash scripts/features/state/update-pane-state.sh \
+  --pane "%10" \
+  --app claude \
+  --status running \
+  --subagent-event stop \
+  --updated-at 303
+
+assert_file_contains "$TMUX_SIDEBAR_STATE_DIR/pane-%10.json" '"status":"running"'
+assert_file_contains "$TMUX_SIDEBAR_STATE_DIR/pane-%10.json" '"subagent_count":0'
+
+bash scripts/features/state/update-pane-state.sh \
+  --pane "%10" \
+  --app claude \
+  --status running \
+  --subagent-event start \
+  --updated-at 304
+
+assert_file_contains "$TMUX_SIDEBAR_STATE_DIR/pane-%10.json" '"subagent_count":1'
+
+bash scripts/features/state/update-pane-state.sh \
+  --pane "%10" \
+  --app claude \
+  --status done \
+  --updated-at 305
+
+assert_file_contains "$TMUX_SIDEBAR_STATE_DIR/pane-%10.json" '"status":"done"'
+assert_file_contains "$TMUX_SIDEBAR_STATE_DIR/pane-%10.json" '"subagent_count":0'

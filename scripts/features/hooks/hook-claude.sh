@@ -13,11 +13,17 @@ parse_hook_result claude
 pane_id="$(resolve_agent_target_pane "${TMUX_PANE:-}")"
 [ -n "$pane_id" ] || exit 0
 metadata_json="$(hook_metadata_json claude "$hook_event")"
-suppression="$(HOOK_METADATA_JSON="$metadata_json" bash "$SCRIPTS_DIR/features/hooks/filter-agent-event.sh")"
+suppression="$(HOOK_METADATA_JSON="$metadata_json" HOOK_SUBAGENT_TRACKING=1 bash "$SCRIPTS_DIR/features/hooks/filter-agent-event.sh")"
 [ "$suppression" = suppress ] && exit 0
 
-exec "$update_helper" \
+update_args=(
   --pane "$pane_id" \
   --app claude \
   --status "$hook_status" \
   --message "$hook_message"
+)
+if [ -n "$hook_subagent_event" ]; then
+  update_args+=(--subagent-event "$hook_subagent_event")
+fi
+
+exec "$update_helper" "${update_args[@]}"

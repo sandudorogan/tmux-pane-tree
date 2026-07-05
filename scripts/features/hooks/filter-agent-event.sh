@@ -5,6 +5,7 @@ SCRIPT_DIR="$(CDPATH= cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$SCRIPT_DIR/../../core/lib.sh"
 
 HOOK_METADATA_JSON="${HOOK_METADATA_JSON:-}" \
+HOOK_SUBAGENT_TRACKING="${HOOK_SUBAGENT_TRACKING:-}" \
 HOOK_SESSION_STATE_FILE="$(hook_session_state_file)" \
 python3 - <<'PY'
 from __future__ import annotations
@@ -177,11 +178,13 @@ with with_locked_state(state_path):
     changed = prune_state(state, now)
     key = session_key(app, session_id)
     tracked_session = bool(key) and key in state["subagent_sessions"]
-    # Explicit Claude/Cursor subagent lifecycle hooks are emitted on the
-    # delegator session, so suppress the lifecycle event itself without
-    # permanently tagging that session as a subagent.
+    # Explicit subagent lifecycle hooks are emitted on the delegator session,
+    # so they never tag that session as a subagent. Hook wrappers that turn
+    # the lifecycle into pane state (HOOK_SUBAGENT_TRACKING=1) receive the
+    # event; for everyone else the lifecycle event itself is suppressed.
+    subagent_tracking = os.environ.get("HOOK_SUBAGENT_TRACKING", "").strip() == "1"
     should_store = bool(key) and (delegate_session or tracked_session)
-    should_suppress = explicit_subagent_event or (
+    should_suppress = (explicit_subagent_event and not subagent_tracking) or (
         event_kind in {"done", "needs-input"} and (delegate_session or tracked_session)
     )
 

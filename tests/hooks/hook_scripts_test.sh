@@ -55,12 +55,14 @@ printf '%s' '{"hook_event_name":"Heartbeat","message":"Still alive"}' | bash scr
 export TEST_HOOK_CAPTURE="$TEST_TMP/claude-hook-subagent-stop.txt"
 rm -f "$TEST_HOOK_CAPTURE"
 printf '%s' '{"hook_event_name":"SubagentStop","message":"Finished subagent task"}' | bash scripts/features/hooks/hook-claude.sh
-[ ! -f "$TEST_HOOK_CAPTURE" ] || fail "claude subagent stop should be suppressed"
+assert_file_contains "$TEST_HOOK_CAPTURE" '--status running'
+assert_file_contains "$TEST_HOOK_CAPTURE" '--subagent-event stop'
 
 export TEST_HOOK_CAPTURE="$TEST_TMP/claude-hook-subagent-start.txt"
 rm -f "$TEST_HOOK_CAPTURE"
 printf '%s' '{"hook_event_name":"SubagentStart","message":"Delegating"}' | bash scripts/features/hooks/hook-claude.sh
-[ ! -f "$TEST_HOOK_CAPTURE" ] || fail "claude subagent start should be suppressed"
+assert_file_contains "$TEST_HOOK_CAPTURE" '--status running'
+assert_file_contains "$TEST_HOOK_CAPTURE" '--subagent-event start'
 
 export TEST_HOOK_CAPTURE="$TEST_TMP/claude-hook-stop.txt"
 printf '%s' '{"hook_event_name":"Stop","message":"Finished task"}' | bash scripts/features/hooks/hook-claude.sh

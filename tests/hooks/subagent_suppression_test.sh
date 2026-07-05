@@ -9,6 +9,7 @@ mkdir -p "$STATE_DIR"
 run_filter() {
   TMUX_PANE_TREE_STATE_DIR="$STATE_DIR" \
   HOOK_METADATA_JSON="$1" \
+  HOOK_SUBAGENT_TRACKING="${2:-}" \
   bash scripts/features/hooks/filter-agent-event.sh
 }
 
@@ -21,13 +22,17 @@ run_filter_from_metadata() {
   bash scripts/features/hooks/filter-agent-event.sh
 }
 
-assert_eq "suppress" "$(run_filter '{"app":"claude","event":"SubagentStop","session_id":"sub-1","permission_mode":"","explicit_subagent_event":true,"delegate_session":false}')"
+assert_eq "allow" "$(run_filter '{"app":"claude","event":"SubagentStop","session_id":"sub-1","permission_mode":"","explicit_subagent_event":true,"delegate_session":false}' 1)"
 [ ! -e "$STATE_DIR/agent-hook-state.json" ] || fail "explicit claude subagent lifecycle should not create tracked session state"
+
+assert_eq "suppress" "$(run_filter '{"app":"claude","event":"SubagentStop","session_id":"sub-1","permission_mode":"","explicit_subagent_event":true,"delegate_session":false}')"
+assert_eq "suppress" "$(run_filter '{"app":"cursor","event":"subagentStart","session_id":"cur-1","permission_mode":"","explicit_subagent_event":true,"delegate_session":false}')"
+assert_eq "suppress" "$(run_filter '{"app":"cursor","event":"subagentStop","session_id":"cur-1","permission_mode":"","explicit_subagent_event":true,"delegate_session":false}')"
 
 assert_eq "allow" "$(run_filter '{"app":"claude","event":"Stop","session_id":"sub-1","permission_mode":"","explicit_subagent_event":false,"delegate_session":false}')"
 
-assert_eq "suppress" "$(run_filter '{"app":"claude","event":"SubagentStart","session_id":"shared-1","permission_mode":"","explicit_subagent_event":true,"delegate_session":false}')"
-assert_eq "suppress" "$(run_filter '{"app":"claude","event":"SubagentStop","session_id":"shared-1","permission_mode":"","explicit_subagent_event":true,"delegate_session":false}')"
+assert_eq "allow" "$(run_filter '{"app":"claude","event":"SubagentStart","session_id":"shared-1","permission_mode":"","explicit_subagent_event":true,"delegate_session":false}' 1)"
+assert_eq "allow" "$(run_filter '{"app":"claude","event":"SubagentStop","session_id":"shared-1","permission_mode":"","explicit_subagent_event":true,"delegate_session":false}' 1)"
 assert_eq "allow" "$(run_filter '{"app":"claude","event":"Stop","session_id":"shared-1","permission_mode":"","explicit_subagent_event":false,"delegate_session":false}')"
 
 assert_eq "allow" "$(run_filter '{"app":"claude","event":"Stop","session_id":"main-1","permission_mode":"","explicit_subagent_event":false,"delegate_session":false}')"

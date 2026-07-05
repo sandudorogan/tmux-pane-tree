@@ -9,6 +9,7 @@ app=""
 status=""
 message=""
 updated_at=""
+subagent_event=""
 
 current_timestamp_ns() {
   python3 - <<'PY'
@@ -24,7 +25,7 @@ status_rank() {
   case "${1:-}" in
     needs-input|error) printf '4\n' ;;
     done) printf '3\n' ;;
-    running) printf '2\n' ;;
+    running|subagent-running) printf '2\n' ;;
     idle) printf '1\n' ;;
     *) printf '0\n' ;;
   esac
@@ -52,6 +53,10 @@ while [ "$#" -gt 0 ]; do
       updated_at="${2:-}"
       shift 2
       ;;
+    --subagent-event)
+      subagent_event="${2:-}"
+      shift 2
+      ;;
     *)
       printf 'unknown arg: %s\n' "$1" >&2
       exit 1
@@ -66,6 +71,10 @@ fi
 [ -n "$pane_id" ] || exit 0
 [[ "$pane_id" =~ ^%[0-9]+$ ]] || { printf 'invalid pane_id: %s\n' "$pane_id" >&2; exit 1; }
 [ -n "$status" ] || exit 0
+case "$subagent_event" in
+  ""|start|stop) ;;
+  *) printf 'invalid subagent_event: %s\n' "$subagent_event" >&2; exit 1 ;;
+esac
 
 state_dir="$(print_state_dir)"
 mkdir -p "$state_dir"
@@ -79,18 +88,45 @@ if [ -z "$updated_at" ]; then
 fi
 [[ "$updated_at" =~ ^[0-9]+$ ]] || { printf 'invalid updated_at: %s\n' "$updated_at" >&2; exit 1; }
 
+subagent_count=0
 if [ -f "$state_file" ]; then
+  existing_subagent_count="$(json_get_number "$state_file" "subagent_count")"
+  if [ -n "$existing_subagent_count" ]; then
+    subagent_count="$existing_subagent_count"
+  fi
   existing_updated_at="$(json_get_number "$state_file" "updated_at")"
   if [ -n "$existing_updated_at" ] && [ "$existing_updated_at" -gt "$updated_at" ]; then
     exit 0
   fi
   if [ -n "$existing_updated_at" ] && [ "$existing_updated_at" -eq "$updated_at" ]; then
     existing_status="$(json_get_string "$state_file" "status")"
-    if [ "$(status_rank "$existing_status")" -gt "$(status_rank "$status")" ]; then
+    if [ -z "$subagent_event" ] && [ "$(status_rank "$existing_status")" -gt "$(status_rank "$status")" ]; then
       exit 0
     fi
   fi
 fi
+
+case "$subagent_event" in
+  start)
+    subagent_count="$((subagent_count + 1))"
+    status="subagent-running"
+    ;;
+  stop)
+    if [ "$subagent_count" -gt 0 ]; then
+      subagent_count="$((subagent_count - 1))"
+    fi
+    if [ "$subagent_count" -gt 0 ]; then
+      status="subagent-running"
+    fi
+    ;;
+  "")
+    # Turn and session boundaries mean no subagents are left; resetting here
+    # keeps a lost SubagentStop from pinning the pane at subagent-running.
+    case "$status" in
+      idle|done|running) subagent_count=0 ;;
+    esac
+    ;;
+esac
 
 session_name=""
 window_id=""
@@ -112,7 +148,7 @@ elif [ -f "$state_file" ]; then
 fi
 
 tmp_file="$(mktemp "$state_dir/.pane-state.XXXXXX")"
-if printf '{"pane_id":"%s","session_name":"%s","window_id":"%s","window_name":"%s","pane_title":"%s","pane_current_command":"%s","app":"%s","status":"%s","message":"%s","updated_at":%s}\n' \
+if printf '{"pane_id":"%s","session_name":"%s","window_id":"%s","window_name":"%s","pane_title":"%s","pane_current_command":"%s","app":"%s","status":"%s","message":"%s","subagent_count":%s,"updated_at":%s}\n' \
   "$(json_escape "$pane_id")" \
   "$(json_escape "$session_name")" \
   "$(json_escape "$window_id")" \
@@ -122,6 +158,7 @@ if printf '{"pane_id":"%s","session_name":"%s","window_id":"%s","window_name":"%
   "$(json_escape "$app")" \
   "$(json_escape "$status")" \
   "$(json_escape "$message")" \
+  "$subagent_count" \
   "$updated_at" > "$tmp_file" \
   && mv "$tmp_file" "$state_file"
 then

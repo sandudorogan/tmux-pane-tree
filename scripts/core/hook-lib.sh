@@ -5,6 +5,7 @@ HOOK_LIB_DIR="$(CDPATH= cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 hook_event=""
 hook_payload=""
 hook_status=""
+hook_subagent_event=""
 hook_message=""
 
 looks_like_json() {
@@ -62,7 +63,8 @@ parse_hook_result() {
     HOOK_PAYLOAD="$hook_payload" python3 "$HOOK_LIB_DIR/hook-parser.py" "$app" "$event"
   )"
   hook_status="$(printf '%s\n' "$parsed" | sed -n '1p')"
-  hook_message="$(printf '%s\n' "$parsed" | sed '1d')"
+  hook_subagent_event="$(printf '%s\n' "$parsed" | sed -n '2p')"
+  hook_message="$(printf '%s\n' "$parsed" | sed '1,2d')"
 }
 
 hook_metadata_json() {

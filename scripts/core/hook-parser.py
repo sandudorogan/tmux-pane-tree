@@ -19,11 +19,12 @@ def load_payload(raw_payload: str) -> dict[str, Any]:
     return loaded if isinstance(loaded, dict) else {}
 
 
-def parse_claude(payload: str) -> tuple[str, str]:
+def parse_claude(payload: str) -> tuple[str, str, str]:
     data = load_payload(payload)
     event = str(data.get("hook_event_name") or os.environ.get("CLAUDE_HOOK_EVENT_NAME") or "").strip()
     notification_type = str(data.get("notification_type") or "").strip().lower()
     message = str(data.get("message") or data.get("notification_type") or "").strip()
+    subagent_event = ""
 
     if event in ("SessionStart", "SessionEnd"):
         status = "idle"
@@ -31,8 +32,10 @@ def parse_claude(payload: str) -> tuple[str, str]:
         status = "running"
     elif event == "SubagentStart":
         status = "running"
+        subagent_event = "start"
     elif event == "SubagentStop":
-        status = "done"
+        status = "running"
+        subagent_event = "stop"
     elif event == "Notification" and notification_type == "idle_prompt":
         status = "idle"
     elif event in ("Notification", "PermissionRequest"):
@@ -44,7 +47,7 @@ def parse_claude(payload: str) -> tuple[str, str]:
     else:
         status = ""
 
-    return status, message
+    return status, subagent_event, message
 
 
 def parse_codex(event: str, payload: str) -> tuple[str, str]:
@@ -196,8 +199,9 @@ def parse_cursor(event: str, payload: str) -> tuple[str, str]:
     return status, message
 
 
-def write_result(status: str, message: str) -> None:
+def write_result(status: str, subagent_event: str, message: str) -> None:
     print(status)
+    print(subagent_event)
     if message:
         print(message)
 
@@ -276,8 +280,9 @@ def main() -> None:
     args = parser.parse_args()
 
     payload = os.environ.get("HOOK_PAYLOAD", "")
+    subagent_event = ""
     if args.app == "claude":
-        status, message = parse_claude(payload)
+        status, subagent_event, message = parse_claude(payload)
     elif args.app == "codex":
         status, message = parse_codex(args.event, payload)
     elif args.app == "cursor":
@@ -288,7 +293,7 @@ def main() -> None:
         status, message = parse_kiro(args.event, payload)
     else:
         status, message = parse_opencode(args.event, payload)
-    write_result(status, message)
+    write_result(status, subagent_event, message)
 
 
 if __name__ == "__main__":

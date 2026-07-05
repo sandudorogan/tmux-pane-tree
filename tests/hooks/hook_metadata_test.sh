@@ -25,6 +25,16 @@ assert_contains "$claude_env_subagent" '"explicit_subagent_event":true'
 
 claude_subagent_start_status="$(run_parser claude '{"hook_event_name":"SubagentStart","message":"Delegating"}')"
 assert_eq "$(printf '%s\n' "$claude_subagent_start_status" | sed -n '1p')" "running"
+assert_eq "$(printf '%s\n' "$claude_subagent_start_status" | sed -n '2p')" "start"
+
+claude_subagent_stop_status="$(run_parser claude '{"hook_event_name":"SubagentStop","message":"Finished"}')"
+assert_eq "$(printf '%s\n' "$claude_subagent_stop_status" | sed -n '1p')" "running"
+assert_eq "$(printf '%s\n' "$claude_subagent_stop_status" | sed -n '2p')" "stop"
+
+claude_stop_status="$(run_parser claude '{"hook_event_name":"Stop","message":"Finished task"}')"
+assert_eq "$(printf '%s\n' "$claude_stop_status" | sed -n '1p')" "done"
+assert_eq "$(printf '%s\n' "$claude_stop_status" | sed -n '2p')" ""
+assert_eq "$(printf '%s\n' "$claude_stop_status" | sed -n '3p')" "Finished task"
 
 cursor_stop_completed_status="$(run_parser cursor '{"hook_event_name":"stop","status":"completed","agent_message":"Finished task"}' stop)"
 assert_eq "$(printf '%s\n' "$cursor_stop_completed_status" | sed -n '1p')" "done"
