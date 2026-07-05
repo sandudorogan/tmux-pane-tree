@@ -10,8 +10,13 @@ update_helper="${TMUX_SIDEBAR_UPDATE_HELPER:-$SCRIPTS_DIR/features/state/update-
 resolve_hook_input "${1:-}" "${2:-}"
 hook_event="$(cursor_hook_event)"
 explicit_pane="$(cursor_explicit_pane)"
-mapfile -t workspace_roots < <(cursor_workspace_roots)
-pane_id="$(resolve_agent_target_pane "$explicit_pane" "${workspace_roots[@]}")"
+workspace_roots=()
+while IFS= read -r workspace_root; do
+  if [ -n "$workspace_root" ]; then
+    workspace_roots+=("$workspace_root")
+  fi
+done < <(cursor_workspace_roots)
+pane_id="$(resolve_agent_target_pane "$explicit_pane" ${workspace_roots[@]+"${workspace_roots[@]}"})"
 [ -n "$pane_id" ] || exit 0
 
 parse_hook_result cursor "$hook_event"
