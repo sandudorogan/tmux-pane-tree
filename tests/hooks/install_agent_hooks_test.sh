@@ -60,6 +60,32 @@ assert_file_contains "$KIRO_AGENT" '"agentSpawn"'
 assert_file_contains "$KIRO_AGENT" '"preToolUse"'
 assert_file_contains "$KIRO_CLI_SETTINGS" '"defaultAgent": "tmux-pane-tree"'
 
+cp "$CLAUDE_SETTINGS" "$CLAUDE_SETTINGS.bak-tmux-sidebar-20260315000000"
+cp "$CLAUDE_SETTINGS" "$CLAUDE_SETTINGS.bak-tmux-sidebar-20260316000000"
+cp "$CLAUDE_SETTINGS" "$CLAUDE_SETTINGS.bak-tmux-sidebar-20260317000000"
+cp "$PI_EXTENSION" "$PI_EXTENSION.bak-tmux-sidebar-20260315000000"
+cp "$PI_EXTENSION" "$PI_EXTENSION.bak-tmux-sidebar-20260316000000"
+cp "$PI_EXTENSION" "$PI_EXTENSION.bak-tmux-sidebar-20260317000000"
+
+HOME="$HOME_DIR" \
+PLUGIN_DST="$PLUGIN_DST" \
+CURSOR_HOOKS="$CURSOR_HOOKS" \
+OPENCODE_PLUGIN="$EXPLICIT_OPENCODE_PLUGIN" \
+TIMESTAMP="20260320000004" \
+bash "$REPO_ROOT/scripts/features/hooks/install-agent-hooks.sh"
+
+claude_backup_count="$(find "$(dirname "$CLAUDE_SETTINGS")" -name 'settings.json.bak-tmux-sidebar-*' | wc -l | tr -d ' ')"
+assert_eq "$claude_backup_count" "3"
+[ ! -f "$CLAUDE_SETTINGS.bak-tmux-sidebar-20260315000000" ] || fail "expected old Claude backup to be pruned"
+[ -f "$CLAUDE_SETTINGS.bak-tmux-sidebar-20260317000000" ] || fail "expected recent Claude backup to remain"
+[ -f "$CLAUDE_SETTINGS.bak-tmux-sidebar-20260320000004" ] || fail "expected latest Claude backup to remain"
+
+pi_backup_count="$(find "$(dirname "$PI_EXTENSION")" -name 'tmux-pane-tree.ts.bak-tmux-sidebar-*' | wc -l | tr -d ' ')"
+assert_eq "$pi_backup_count" "3"
+[ ! -f "$PI_EXTENSION.bak-tmux-sidebar-20260315000000" ] || fail "expected old Pi backup to be pruned"
+[ -f "$PI_EXTENSION.bak-tmux-sidebar-20260317000000" ] || fail "expected recent Pi backup to remain"
+[ -f "$PI_EXTENSION.bak-tmux-sidebar-20260320000004" ] || fail "expected latest Pi backup to remain"
+
 BAD_CURSOR_HOOKS="$HOME_DIR/.cursor/bad-hooks.json"
 cat > "$BAD_CURSOR_HOOKS" <<'EOF'
 {"version":1,"hooks":[]}

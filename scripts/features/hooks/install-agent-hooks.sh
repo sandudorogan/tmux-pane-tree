@@ -12,6 +12,16 @@ KIRO_AGENT="${KIRO_AGENT:-$HOME/.kiro/agents/tmux-pane-tree.json}"
 KIRO_CLI_SETTINGS="${KIRO_CLI_SETTINGS:-$HOME/.kiro/settings/cli.json}"
 TIMESTAMP="${TIMESTAMP:-$(date +%Y%m%d%H%M%S)}"
 
+backup_file() {
+  local base_path="$1"
+  cp "$base_path" "$base_path.bak-tmux-sidebar-$TIMESTAMP"
+  ls -1t "${base_path}.bak-tmux-sidebar-"* 2>/dev/null \
+    | tail -n +4 \
+    | while IFS= read -r old_backup; do
+        rm -f "$old_backup"
+      done
+}
+
 mkdir -p \
   "$(dirname "$CLAUDE_SETTINGS")" \
   "$(dirname "$CODEX_CONFIG")" \
@@ -22,7 +32,7 @@ mkdir -p \
   "$(dirname "$KIRO_CLI_SETTINGS")"
 
 if [ -f "$CLAUDE_SETTINGS" ]; then
-  cp "$CLAUDE_SETTINGS" "$CLAUDE_SETTINGS.bak-tmux-sidebar-$TIMESTAMP"
+  backup_file "$CLAUDE_SETTINGS"
 else
   printf '{}\n' > "$CLAUDE_SETTINGS"
 fi
@@ -81,7 +91,7 @@ path.write_text(json.dumps(data, indent=2) + "\n")
 END_CLAUDE
 
 if [ -f "$CODEX_CONFIG" ]; then
-  cp "$CODEX_CONFIG" "$CODEX_CONFIG.bak-tmux-sidebar-$TIMESTAMP"
+  backup_file "$CODEX_CONFIG"
 else
   : > "$CODEX_CONFIG"
 fi
@@ -103,7 +113,7 @@ path.write_text(text)
 END_CODEX
 
 if [ -f "$CURSOR_HOOKS" ]; then
-  cp "$CURSOR_HOOKS" "$CURSOR_HOOKS.bak-tmux-sidebar-$TIMESTAMP"
+  backup_file "$CURSOR_HOOKS"
 else
   printf '{\n  "version": 1,\n  "hooks": {}\n}\n' > "$CURSOR_HOOKS"
 fi
@@ -155,7 +165,7 @@ path.write_text(json.dumps(data, indent=2) + "\n")
 END_CURSOR
 
 if [ -f "$OPENCODE_PLUGIN" ]; then
-  cp "$OPENCODE_PLUGIN" "$OPENCODE_PLUGIN.bak-tmux-sidebar-$TIMESTAMP"
+  backup_file "$OPENCODE_PLUGIN"
 fi
 
 OPENCODE_PLUGIN="$OPENCODE_PLUGIN" PLUGIN_DST="$PLUGIN_DST" python3 - <<'END_OPENCODE'
@@ -216,7 +226,7 @@ export const TmuxSidebarPlugin = async () => {{
 END_OPENCODE
 
 if [ -f "$PI_EXTENSION" ]; then
-  cp "$PI_EXTENSION" "$PI_EXTENSION.bak-tmux-sidebar-$TIMESTAMP"
+  backup_file "$PI_EXTENSION"
 fi
 
 PI_EXTENSION="$PI_EXTENSION" PLUGIN_DST="$PLUGIN_DST" python3 - <<'END_PI'
@@ -272,7 +282,7 @@ export default function (pi: ExtensionAPI) {{
 END_PI
 
 if [ -f "$KIRO_AGENT" ]; then
-  cp "$KIRO_AGENT" "$KIRO_AGENT.bak-tmux-sidebar-$TIMESTAMP"
+  backup_file "$KIRO_AGENT"
 fi
 
 KIRO_AGENT="$KIRO_AGENT" PLUGIN_DST="$PLUGIN_DST" python3 - <<'END_KIRO_AGENT'
@@ -313,7 +323,7 @@ path.write_text(json.dumps(data, indent=2) + "\n")
 END_KIRO_AGENT
 
 if [ -f "$KIRO_CLI_SETTINGS" ]; then
-  cp "$KIRO_CLI_SETTINGS" "$KIRO_CLI_SETTINGS.bak-tmux-sidebar-$TIMESTAMP"
+  backup_file "$KIRO_CLI_SETTINGS"
 fi
 
 KIRO_CLI_SETTINGS="$KIRO_CLI_SETTINGS" python3 - <<'END_KIRO_SETTINGS'

@@ -399,9 +399,7 @@ The installer updates:
 - `~/.kiro/agents/tmux-pane-tree.json`
 - `~/.kiro/settings/cli.json`
 
-It creates timestamped backups before changing existing files, then replaces
-the single `notify = [...]` line in `~/.codex/config.toml` with the
-tmux-pane-tree Codex hook wrapper. For Kiro, it only rewrites
+It creates timestamped backups before changing existing files, keeping the three most recent backups per file, then replaces the single `notify = [...]` line in `~/.codex/config.toml` with the tmux-pane-tree Codex hook wrapper. For Kiro, it only rewrites
 `chat.defaultAgent` when it is missing or still `kiro_default`, so existing
 custom default agents stay intact.
 
