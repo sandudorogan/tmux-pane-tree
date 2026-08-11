@@ -12,6 +12,7 @@ All notable project versions are documented here.
 - Stopped treating a `delegate` permission mode as a subagent marker for non-codex apps; claude sessions in delegate mode no longer have their completion events suppressed.
 - Keep the cursor label on idle cursor-agent panes while the pane still runs the command captured in hook state, instead of falling back to `node`.
 - `hook-cursor.sh` no longer uses `mapfile`, so it survives being run by the system bash 3.2.
+- Fixed TPM reporting `'~/.tmux/plugins/tpm/tpm' returned 126` on load by moving the sourced-only tmux config to `tmux-pane-tree.conf`. Configs that loaded the plugin with `run-shell .../sidebar.tmux` must switch to `source-file .../tmux-pane-tree.conf`, since that form now returns silently without loading anything.
 
 ## 0.3.3
 

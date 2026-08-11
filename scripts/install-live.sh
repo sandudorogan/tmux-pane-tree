@@ -13,7 +13,7 @@ mkdir -p "$(dirname "$PLUGIN_DST")"
 rm -rf "$PLUGIN_DST"
 mkdir -p "$PLUGIN_DST"
 cp -R "$PLUGIN_SRC"/. "$PLUGIN_DST"/
-chmod +x "$PLUGIN_DST"/sidebar.tmux "$PLUGIN_DST"/tmux-pane-tree.tmux "$PLUGIN_DST"/examples/*.sh
+chmod +x "$PLUGIN_DST"/*.tmux "$PLUGIN_DST"/examples/*.sh
 find "$PLUGIN_DST/scripts" -type f -name '*.sh' -exec chmod +x {} +
 
 cp "$TMUX_CONF" "$TMUX_CONF.bak-tmux-sidebar-$TIMESTAMP"
@@ -23,7 +23,7 @@ from pathlib import Path
 
 tmux_conf = Path(os.environ["TMUX_CONF"]).expanduser()
 plugin_dst = Path(os.environ["PLUGIN_DST"]).expanduser()
-source_line = f"source-file {plugin_dst / 'tmux-pane-tree.tmux'}"
+source_line = f"source-file {plugin_dst / 'tmux-pane-tree.conf'}"
 
 text = tmux_conf.read_text()
 lines = []
@@ -34,7 +34,9 @@ for line in text.splitlines(keepends=True):
     if not stripped:
         lines.append(line)
         continue
-    if "tmux-pane-tree.tmux" in stripped and "source-file" in stripped:
+    if "source-file" in stripped and (
+        "tmux-pane-tree.tmux" in stripped or "tmux-pane-tree.conf" in stripped
+    ):
         continue
     if "source-file" in stripped and "sidebar.tmux" in stripped and (
         "tmux-sidebar" in line

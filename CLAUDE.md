@@ -5,8 +5,9 @@ A tmux plugin that adds an interactive sidebar showing sessions, windows, and pa
 ## Architecture
 
 ```
-sidebar.tmux          <- polyglot shim (TPM entry point), sources tmux-pane-tree.tmux
-tmux-pane-tree.tmux   <- primary tmux config: hooks, keybindings, startup
+tmux-pane-tree.tmux   <- polyglot TPM entry point, applies tmux-pane-tree.conf
+sidebar.tmux          <- legacy-named polyglot, no-op under TPM, sources the conf when sourced
+tmux-pane-tree.conf   <- primary tmux config: hooks, keybindings, startup
 sidebar.conf          <- legacy config (kept for install-live.sh compatibility)
 scripts/
   core/
@@ -87,7 +88,7 @@ To manually verify changes without install-live:
 ```bash
 # Source the plugin directly in a test session
 tmux new-session -d -s sidebar-test
-tmux source-file sidebar.tmux
+tmux source-file tmux-pane-tree.conf
 ```
 
 ### After any code change
@@ -127,8 +128,11 @@ tmux source-file sidebar.tmux
 
 ### tmux plugin conventions
 
-- `sidebar.tmux` is a polyglot shim (bash + tmux conf) that sources `tmux-pane-tree.tmux` — TPM executes `.tmux` files as bash scripts, tmux `source-file` reads them as config
-- `tmux-pane-tree.tmux` is the primary tmux config that registers hooks and keybindings
+- Top-level `*.tmux` files are polyglots (bash + tmux conf) — TPM executes them as bash scripts, tmux `source-file` reads them as config
+- TPM execs every **top-level** `*.tmux` in the plugin dir, so each one must be a polyglot committed `100755`; top-level config meant only to be sourced uses `.conf`. This does not apply to `.tmux` fragments generated at runtime under the state dir (`bind-mouse.tmux`, `menu-cmd.tmux`) — TPM never sees those
+- `tmux-pane-tree.conf` is the primary tmux config that registers hooks and keybindings
+- Exactly one top-level `*.tmux` applies that config from its bash branch, so TPM exec'ing all of them applies it once. That one is `tmux-pane-tree.tmux`, the current public name — keep the applier on the name that outlives the compatibility window
+- `sidebar.tmux` is the legacy-named entrypoint: its bash branch is `exit 0`, its tmux branch sources `tmux-pane-tree.conf` so existing `source-file` lines keep working
 - `sidebar.conf` is the legacy config, kept for `install-live.sh` compatibility patching
 - Use `#{d:current_file}` for relative paths in hook registrations
 - Hook indices (e.g. `[198]`) are namespaced to avoid collisions with other plugins

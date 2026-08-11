@@ -39,5 +39,5 @@ TIMESTAMP="20260320000000" \
 bash "$REPO_ROOT/scripts/install-live.sh"
 
 assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" "source-file $TMUX_CONF"
-assert_file_contains "$TMUX_CONF" "source-file $NORMALIZED_PLUGIN_DST/tmux-pane-tree.tmux"
+assert_file_contains "$TMUX_CONF" "source-file $NORMALIZED_PLUGIN_DST/tmux-pane-tree.conf"
 assert_file_not_contains "$TMUX_CONF" 'tmux-sidebar/sidebar.tmux'
