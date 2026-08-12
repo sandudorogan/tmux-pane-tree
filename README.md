@@ -73,10 +73,15 @@ git clone https://github.com/sandudorogan/tmux-pane-tree \
 Source it in your tmux config:
 
 ```tmux
-source-file ~/.config/tmux/plugins/tmux-pane-tree/tmux-pane-tree.tmux
+source-file ~/.config/tmux/plugins/tmux-pane-tree/tmux-pane-tree.conf
 ```
 
 Then `tmux source-file ~/.tmux.conf` (or your main config path).
+
+This file used to be named `tmux-pane-tree.tmux`, which still works if you
+already source it. If your config instead loads the plugin with
+`run-shell .../sidebar.tmux`, replace that line — it now returns without doing
+anything, so the plugin silently never loads.
 
 To patch Claude Code, Codex, Cursor, OpenCode, Pi, and Kiro hook config after a manual install:
 
@@ -87,9 +92,10 @@ bash ~/.config/tmux/plugins/tmux-pane-tree/scripts/features/hooks/install-agent-
 ## Rollout
 
 1. This release publishes the new `tmux-pane-tree` name.
-2. Legacy `tmux-sidebar` config and entrypoints remain supported for one compatibility window.
-3. The next release keeps compatibility but docs stop mentioning the old names except in migration notes.
-4. A later breaking release may rename the implicit default state directory and remove legacy names after users have had one full cycle to migrate.
+2. Legacy `tmux-sidebar` config and entrypoints stay `source-file`-able for one compatibility window. The one exception is `run-shell .../sidebar.tmux`, which no longer loads anything and fails silently — switch it to `source-file .../tmux-pane-tree.conf`.
+3. The primary tmux config moved to `tmux-pane-tree.conf`; `tmux-pane-tree.tmux` stays as the TPM entrypoint and sources it, so existing `source-file` lines keep working.
+4. The next release keeps compatibility but docs stop mentioning the old names except in migration notes.
+5. A later breaking release may rename the implicit default state directory and remove legacy `tmux-sidebar` names after users have had one full cycle to migrate.
 
 ## Usage
 
