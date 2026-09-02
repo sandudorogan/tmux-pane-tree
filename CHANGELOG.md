@@ -12,6 +12,7 @@ All notable project versions are documented here.
 - Stopped treating a `delegate` permission mode as a subagent marker for non-codex apps; claude sessions in delegate mode no longer have their completion events suppressed.
 - Keep the cursor label on idle cursor-agent panes while the pane still runs the command captured in hook state, instead of falling back to `node`.
 - `hook-cursor.sh` no longer uses `mapfile`, so it survives being run by the system bash 3.2.
+- Replaced the `tmux wait-for` mutexes with pid-stamped lock files, so a hook killed mid-update no longer wedges the plugin. A `wait-for` channel lives in the tmux server and outlives its holder, so one lost release left every later pane-state, notify, action and ensure call blocked forever, piling up hundreds of stuck tmux clients.
 
 ## 0.3.3
 

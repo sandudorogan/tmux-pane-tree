@@ -80,8 +80,8 @@ state_dir="$(print_state_dir)"
 mkdir -p "$state_dir"
 state_file="$state_dir/pane-$pane_id.json"
 state_lock="@tmux_sidebar_state_${pane_id#%}"
-tmux wait-for -L "$state_lock"
-trap 'tmux wait-for -U "$state_lock" 2>/dev/null || true' EXIT
+trap 'sidebar_lock_release "$state_lock"' EXIT
+sidebar_lock_acquire "$state_lock"
 
 if [ -z "$updated_at" ]; then
   updated_at="$(current_timestamp_ns)"

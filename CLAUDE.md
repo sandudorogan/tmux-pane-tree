@@ -153,4 +153,4 @@ tmux source-file sidebar.tmux
 - Fail fast — `set -euo pipefail` in bash, no silent error swallowing
 - Separation of concerns: `scripts/core/lib.sh` for shared bash logic, `scripts/core/hook-lib.sh`, `scripts/core/hook-parser.py`, and `scripts/core/hook-metadata.py` for shared hook parsing, `scripts/ui/sidebar-ui.py` as the UI entrypoint, and `scripts/ui/sidebar_ui_lib/` for focused Python UI modules
 - Atomic state mutations — write to temp file then `mv` to avoid partial reads
-- Mutex via `tmux wait-for` for operations that race (e.g. ensure-sidebar-pane)
+- Mutex via `sidebar_lock_acquire` / `sidebar_lock_release` for operations that race (e.g. ensure-sidebar-pane). Register the release trap *before* acquiring; releasing a lock you do not hold is a no-op. Never use `tmux wait-for` as a mutex — it lives in the server and outlives the process that took it

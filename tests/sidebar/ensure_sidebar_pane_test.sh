@@ -3,6 +3,9 @@ set -euo pipefail
 
 . "$(dirname "$0")/testlib.sh"
 
+export TMUX_PANE_TREE_STATE_DIR="$TEST_TMP/state"
+lock_dir="$TMUX_PANE_TREE_STATE_DIR/locks"
+
 fake_tmux_no_sidebar
 fake_tmux_register_pane "%1" "work" "@1" "editor" "nvim"
 
@@ -113,8 +116,7 @@ printf '1\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_enabled.txt"
 bash scripts/features/sidebar/ensure-sidebar-pane.sh %2 @2
 
 assert_eq "$(fake_tmux_sidebar_count)" "1"
-assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'wait-for -L @tmux_sidebar_ensure_w2'
-assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'wait-for -U @tmux_sidebar_ensure_w2'
+assert_file_absent "$lock_dir/@tmux_sidebar_ensure_w2"
 assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'split-window -t %2'
 assert_file_contains "$TEST_TMUX_DATA_DIR/toggle_panes.txt" '%99|Sidebar|@2'
 
@@ -126,8 +128,7 @@ printf '1\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_enabled.txt"
 bash scripts/features/sidebar/ensure-sidebar-pane.sh "" @2
 
 assert_eq "$(fake_tmux_sidebar_count)" "1"
-assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'wait-for -L @tmux_sidebar_ensure_w2'
-assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'wait-for -U @tmux_sidebar_ensure_w2'
+assert_file_absent "$lock_dir/@tmux_sidebar_ensure_w2"
 assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'split-window -t %2'
 assert_file_contains "$TEST_TMUX_DATA_DIR/toggle_panes.txt" '%99|Sidebar|@2'
 assert_file_not_contains "$TEST_TMUX_DATA_DIR/commands.log" 'split-window -t %1'
@@ -144,11 +145,12 @@ assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'split-window -t %1 -h -
 fake_tmux_no_sidebar
 fake_tmux_register_pane "%1" "work" "@1" "editor" "nvim"
 printf '1\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_enabled.txt"
-printf '@tmux_sidebar_ensure_w1\n' > "$TEST_TMUX_DATA_DIR/disable_enabled_on_wait_for_lock.txt"
+printf '%s\n' "$lock_dir/@tmux_sidebar_ensure_w1" > "$TEST_TMUX_DATA_DIR/disable_enabled_on_lock.txt"
 
 bash scripts/features/sidebar/ensure-sidebar-pane.sh
 
 assert_file_not_contains "$TEST_TMUX_DATA_DIR/commands.log" 'split-window'
+assert_file_absent "$lock_dir/@tmux_sidebar_ensure_w1"
 
 fake_tmux_no_sidebar
 fake_tmux_register_pane "%1" "work" "@1" "editor" "nvim"
@@ -161,7 +163,6 @@ assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'split-window -t %1 -h -
 assert_eq "$(fake_tmux_sidebar_count)" "1"
 
 fake_tmux_no_sidebar
-export TMUX_PANE_TREE_STATE_DIR="$TEST_TMP/state"
 mkdir -p "$TMUX_PANE_TREE_STATE_DIR"
 printf '33\n' > "$TMUX_PANE_TREE_STATE_DIR/sidebar-width.txt"
 fake_tmux_register_pane "%1" "work" "@1" "editor" "nvim"
