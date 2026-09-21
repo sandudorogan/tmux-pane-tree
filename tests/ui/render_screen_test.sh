@@ -55,3 +55,41 @@ if screen.refresh_count != 1:
 if not any(call[2].strip() == "" for call in screen.calls):
     raise SystemExit("render_screen should clear individual rows before drawing")
 PY
+
+python3 - <<'PY'
+from __future__ import annotations
+
+import curses
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path("scripts/ui").resolve()))
+from sidebar_ui_lib import render
+
+render.curses.COLS = 40
+render.curses.LINES = 10
+render.curses.curs_set = lambda value: None
+
+
+class ShrunkScreen:
+    def __init__(self) -> None:
+        self.refresh_count = 0
+
+    def addnstr(self, y: int, x: int, value: str, width: int, attr: int = 0) -> None:
+        if x + width > 10:
+            raise curses.error("addnwstr() returned ERR")
+
+    def move(self, y: int, x: int) -> None:
+        pass
+
+    def refresh(self) -> None:
+        self.refresh_count += 1
+
+
+screen = ShrunkScreen()
+rows = [{"kind": "session", "session": "work", "text": "├─ work"}]
+render.render_screen(screen, rows, "%1")
+
+if screen.refresh_count != 0:
+    raise SystemExit("render_screen should skip refresh when the window shrank mid-draw")
+PY

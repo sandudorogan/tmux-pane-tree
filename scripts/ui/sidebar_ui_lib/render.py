@@ -205,6 +205,29 @@ def render_screen(
     window_attr: int = 0,
     pane_attr: int = 0,
 ) -> None:
+    try:
+        _draw_screen(
+            stdscr, rows, selected_pane_id, scroll_offset, search_query, search_matches,
+            search_mode, active_attr, session_attr, window_attr, pane_attr,
+        )
+    except curses.error:
+        return
+    stdscr.refresh()
+
+
+def _draw_screen(
+    stdscr,
+    rows: list[dict],
+    selected_pane_id: str,
+    scroll_offset: int,
+    search_query: str,
+    search_matches: set[int] | None,
+    search_mode: bool,
+    active_attr: int,
+    session_attr: int,
+    window_attr: int,
+    pane_attr: int,
+) -> None:
     width = max(0, curses.COLS - 1)
     has_search_bar = search_mode or bool(search_query)
     visible_lines = curses.LINES - (1 if has_search_bar else 0)
@@ -255,4 +278,3 @@ def render_screen(
             curses.curs_set(0)
     else:
         curses.curs_set(0)
-    stdscr.refresh()
