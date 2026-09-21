@@ -1,182 +1,149 @@
-// Theme
+// Theme: dark by default, light on request
 (function () {
   var root = document.documentElement;
   var toggle = document.querySelector(".theme-toggle");
-  var prefersDark = window.matchMedia("(prefers-color-scheme: dark)");
+  var stored = null;
+  try {
+    stored = localStorage.getItem("theme");
+  } catch (e) {}
+  if (stored) root.dataset.theme = stored;
 
-  function applyTheme(theme) {
-    root.dataset.theme = theme;
-  }
-
-  function getEffectiveTheme() {
-    var stored = localStorage.getItem("theme");
-    if (stored) return stored;
-    return prefersDark.matches ? "dark" : "light";
-  }
-
-  applyTheme(getEffectiveTheme());
-
-  if (toggle) {
-    toggle.addEventListener("click", function () {
-      var next = root.dataset.theme === "dark" ? "light" : "dark";
+  toggle.addEventListener("click", function () {
+    var next = root.dataset.theme === "light" ? "dark" : "light";
+    root.dataset.theme = next;
+    try {
       localStorage.setItem("theme", next);
-      applyTheme(next);
-    });
-  }
-
-  prefersDark.addEventListener("change", function () {
-    if (!localStorage.getItem("theme")) {
-      applyTheme(prefersDark.matches ? "dark" : "light");
-    }
+    } catch (e) {}
   });
 })();
 
-// Scroll reveal
-var revealNodes = document.querySelectorAll(".reveal");
-
-if ("IntersectionObserver" in window) {
-  var revealObserver = new IntersectionObserver(
-    function (entries) {
-      entries.forEach(function (entry) {
-        if (entry.isIntersecting) {
-          entry.target.classList.add("visible");
-          revealObserver.unobserve(entry.target);
-        }
-      });
-    },
-    { threshold: 0.15 }
-  );
-
-  revealNodes.forEach(function (node, index) {
-    node.style.transitionDelay = Math.min(index * 80, 350) + "ms";
-    revealObserver.observe(node);
-  });
-} else {
-  revealNodes.forEach(function (node) {
-    node.classList.add("visible");
-  });
-}
-
-// Tabs
-var tabButtons = document.querySelectorAll(".tab-btn");
-var tabPanels = document.querySelectorAll(".tab-panel");
-
-tabButtons.forEach(function (button) {
+// Install tabs
+document.querySelectorAll(".tab").forEach(function (button) {
   button.addEventListener("click", function () {
-    tabButtons.forEach(function (item) {
-      item.classList.remove("active");
-      item.setAttribute("aria-selected", "false");
+    document.querySelectorAll(".tab").forEach(function (t) {
+      t.classList.remove("active");
+      t.setAttribute("aria-selected", "false");
     });
-    tabPanels.forEach(function (panel) {
-      panel.classList.remove("active");
-      panel.hidden = true;
+    document.querySelectorAll(".panel").forEach(function (p) {
+      p.classList.remove("active");
+      p.hidden = true;
     });
-
     button.classList.add("active");
     button.setAttribute("aria-selected", "true");
     var panel = document.getElementById(button.dataset.target);
-    if (!panel) return;
     panel.classList.add("active");
     panel.hidden = false;
   });
 });
 
 // Lightbox
-var lightbox = document.getElementById("lightbox");
-var lightboxImg = document.getElementById("lightbox-img");
-
-function openLightbox(src, alt) {
-  lightboxImg.src = src;
-  lightboxImg.alt = alt;
-  lightboxImg.classList.remove("zoomed");
-  lightbox.hidden = false;
-  document.body.style.overflow = "hidden";
-}
-
-function closeLightbox() {
-  lightbox.hidden = true;
-  lightboxImg.src = "";
-  document.body.style.overflow = "";
-}
-
-document.querySelectorAll(".preview-card img").forEach(function (img) {
-  img.addEventListener("click", function () {
-    openLightbox(img.src, img.alt);
+(function () {
+  var box = document.getElementById("lightbox");
+  var img = document.getElementById("lightbox-img");
+  document.querySelectorAll(".showcase img").forEach(function (src) {
+    src.addEventListener("click", function () {
+      img.src = src.src;
+      img.alt = src.alt;
+      box.hidden = false;
+    });
   });
-});
-
-lightbox.addEventListener("click", function (e) {
-  if (e.target === lightboxImg) {
-    lightboxImg.classList.toggle("zoomed");
-  } else {
-    closeLightbox();
-  }
-});
-
-document.addEventListener("keydown", function (e) {
-  if (e.key === "Escape" && !lightbox.hidden) {
-    closeLightbox();
-  }
-});
-
-// Feature modal
-var featureModal = document.getElementById("feature-modal");
-var featureModalBody = document.getElementById("feature-modal-body");
-var featureModalCloseBtn = document.getElementById("feature-modal-close");
-var featureModalBackdrop = document.getElementById("feature-modal-backdrop");
-var featureCards = document.querySelectorAll(".feature-card[role='button']");
-var activeFeatureCard = null;
-
-function openFeatureModal(card) {
-  var title = card.querySelector("h3").outerHTML;
-  var details = card.querySelector(".feature-details").innerHTML;
-
-  featureModalBody.innerHTML = title + details;
-  featureModal.hidden = false;
-  activeFeatureCard = card;
-
-  void featureModal.offsetWidth;
-  featureModal.classList.add("active");
-  document.body.style.overflow = "hidden";
-  featureModalCloseBtn.focus();
-}
-
-function closeFeatureModal() {
-  featureModal.classList.remove("active");
-  setTimeout(function () {
-    if (!featureModal.classList.contains("active")) {
-      featureModal.hidden = true;
-      featureModalBody.innerHTML = "";
-      document.body.style.overflow = "";
-      if (activeFeatureCard) {
-        activeFeatureCard.focus();
-        activeFeatureCard = null;
-      }
-    }
-  }, 300);
-}
-
-featureCards.forEach(function (card) {
-  card.addEventListener("click", function () {
-    openFeatureModal(card);
+  box.addEventListener("click", function () {
+    box.hidden = true;
+    img.src = "";
   });
-  card.addEventListener("keydown", function (e) {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      openFeatureModal(card);
-    }
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && !box.hidden) box.click();
   });
-});
+})();
 
-if (featureModalCloseBtn) {
-  featureModalCloseBtn.addEventListener("click", closeFeatureModal);
-}
-if (featureModalBackdrop) {
-  featureModalBackdrop.addEventListener("click", closeFeatureModal);
-}
+// Live sidebar demo
+(function () {
+  var treeEl = document.getElementById("demo-tree");
+  var paneEl = document.getElementById("demo-pane");
+  var WIDTH = 22;
 
-document.addEventListener("keydown", function (e) {
-  if (e.key === "Escape" && featureModal && !featureModal.hidden) {
-    closeFeatureModal();
+  var rows = [
+    { cls: "sess", pre: "", name: "work" },
+    { cls: "win", pre: "├─ ", name: "code" },
+    { cls: "", pre: "│  ├─ ", name: "claude", id: "claude" },
+    { cls: "", pre: "│  └─ ", name: "zsh" },
+    { cls: "win", pre: "└─ ", name: "infra" },
+    { cls: "", pre: "   ├─ ", name: "lazygit" },
+    { cls: "", pre: "   └─ ", name: "yazi" },
+    { cls: "sess", pre: "", name: "notes" },
+    { cls: "win", pre: "└─ ", name: "md" },
+    { cls: "", pre: "   └─ ", name: "vim" },
+  ];
+
+  function esc(s) {
+    return s.replace(/</g, "&lt;");
   }
-});
+
+  function renderTree(sel, badge) {
+    return rows
+      .map(function (r, i) {
+        var label = r.pre + r.name;
+        var pad = " ".repeat(Math.max(1, WIDTH - label.length - (r.id && badge ? 2 : 0)));
+        var line =
+          '<span class="line">' + esc(r.pre) + "</span>" +
+          '<span class="' + r.cls + '">' + r.name + "</span>" +
+          pad + (r.id && badge ? '<span class="badge">' + badge + "</span>" : "");
+        var cursor = i === sel ? '<span class="cur">▶ </span>' : "  ";
+        return i === sel
+          ? '<span class="sel">' + cursor + line + "</span>"
+          : cursor + line;
+      })
+      .join("\n");
+  }
+
+  var pane = {
+    start: '<span class="prompt">$</span> claude\n\n<span class="prompt">></span> tighten the retry loop in lib.sh',
+    read: '\n\n<span class="dim">⏺ Read scripts/core/lib.sh</span>',
+    edit: '\n<span class="dim">⏺ Edit scripts/core/lib.sh</span>',
+    ask: '\n\n<span class="ask">Allow edit to scripts/core/lib.sh?</span>\n<span class="dim">  y / n</span>',
+    yes: '\n<span class="prompt">></span> y',
+    test: '\n\n<span class="dim">⏺ Bash tests/run.sh tests/core/lib_test.sh</span>\n<span class="dim">  12 passed</span>',
+    done: '\n\n<span class="ok">✔</span> Retry backs off 50 → 400 ms. One file changed.',
+  };
+
+  var steps = [
+    { at: 0, sel: 2, badge: "", pane: pane.start },
+    { at: 1400, badge: "⏳", pane: pane.start + pane.read },
+    { at: 2600, pane: pane.start + pane.read + pane.edit },
+    { at: 3800, badge: "❓", pane: pane.start + pane.read + pane.edit + pane.ask },
+    { at: 6200, badge: "⏳", pane: pane.start + pane.read + pane.edit + pane.ask + pane.yes },
+    { at: 7400, pane: pane.start + pane.read + pane.edit + pane.ask + pane.yes + pane.test },
+    { at: 8800, badge: "✅", pane: pane.start + pane.read + pane.edit + pane.ask + pane.yes + pane.test + pane.done },
+    { at: 10400, sel: 3 },
+    { at: 10900, sel: 5 },
+    { at: 11400, sel: 6 },
+    { at: 12200, sel: 2 },
+  ];
+  var LOOP = 13600;
+
+  var state = { sel: 2, badge: "", pane: pane.start };
+
+  function apply(step) {
+    if (step.sel !== undefined) state.sel = step.sel;
+    if (step.badge !== undefined) state.badge = step.badge;
+    if (step.pane !== undefined) state.pane = step.pane;
+    treeEl.innerHTML = renderTree(state.sel, state.badge);
+    paneEl.innerHTML = state.pane + ' <span class="caret"></span>';
+  }
+
+  var still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (still) {
+    apply({ sel: 2, badge: "⏳", pane: pane.start + pane.read + pane.edit });
+    return;
+  }
+
+  function run() {
+    steps.forEach(function (s) {
+      setTimeout(function () {
+        apply(s);
+      }, s.at);
+    });
+    setTimeout(run, LOOP);
+  }
+  run();
+})();
