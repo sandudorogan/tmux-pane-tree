@@ -385,6 +385,7 @@ def run_interactive(stdscr) -> None:
             continue
 
         if key == curses.KEY_RESIZE:
+            curses.update_lines_cols()
             selected_index = find_selected_row_index(rows, selected_pane_id)
             visible_lines = curses.LINES - (1 if search_mode or search_query else 0)
             scroll_offset = ensure_visible(selected_index, scroll_offset, visible_lines, scrolloff)
