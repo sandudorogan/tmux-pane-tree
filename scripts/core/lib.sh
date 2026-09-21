@@ -375,24 +375,65 @@ sidebar_lifecycle_lock_name() {
   printf '%s\n' '@tmux_sidebar_lifecycle'
 }
 
+sidebar_lock_path() {
+  local name="$1"
+  printf '%s/locks/%s\n' "$(print_state_dir)" "$name"
+}
+
+# Blocks until the named mutex is held by this process.
+#
+# `ln -s` is an atomic create that carries the holder PID as the link target, so
+# a lock left behind by a killed holder is recognized as stale and broken. A
+# tmux `wait-for` channel cannot do this: it lives in the server, outlives the
+# process that took it, and one holder killed mid-update wedges every later
+# waiter forever.
+#
+# Args:
+#   name: Lock name, also its filename under the state dir.
+#   timeout: Seconds to trust a live holder before breaking the lock anyway.
+#     Guards against a recycled PID that makes a dead holder look alive.
+sidebar_lock_acquire() {
+  local name="$1"
+  local timeout="${2:-10}"
+  local lock deadline holder
+  lock="$(sidebar_lock_path "$name")"
+  mkdir -p "${lock%/*}"
+  deadline="$((SECONDS + timeout))"
+  while ! ln -s "$$" "$lock" 2>/dev/null; do
+    holder="$(readlink "$lock" 2>/dev/null || true)"
+    if [ -z "$holder" ] || ! kill -0 "$holder" 2>/dev/null || [ "$SECONDS" -ge "$deadline" ]; then
+      rm -f "$lock"
+      continue
+    fi
+    sleep 0.05
+  done
+}
+
+# Releases the named mutex, but only if this process is the recorded holder.
+#
+# Releasing a lock you do not hold is a no-op, so callers register the release
+# trap *before* acquiring and never need an "acquired" flag.
+sidebar_lock_release() {
+  local name="$1"
+  local lock
+  lock="$(sidebar_lock_path "$name")"
+  if [ "$(readlink "$lock" 2>/dev/null || true)" = "$$" ]; then
+    rm -f "$lock"
+  fi
+}
+
 acquire_sidebar_lifecycle_lock() {
   if [ "${TMUX_SIDEBAR_LIFECYCLE_LOCKED:-0}" = "1" ]; then
     return 0
   fi
 
-  tmux wait-for -L "$(sidebar_lifecycle_lock_name)"
+  sidebar_lock_acquire "$(sidebar_lifecycle_lock_name)"
   TMUX_SIDEBAR_LIFECYCLE_LOCKED=1
   export TMUX_SIDEBAR_LIFECYCLE_LOCKED
-  TMUX_SIDEBAR_LIFECYCLE_LOCK_OWNER=1
 }
 
 release_sidebar_lifecycle_lock() {
-  if [ "${TMUX_SIDEBAR_LIFECYCLE_LOCK_OWNER:-0}" != "1" ]; then
-    return 0
-  fi
-
-  tmux wait-for -U "$(sidebar_lifecycle_lock_name)" 2>/dev/null || true
-  TMUX_SIDEBAR_LIFECYCLE_LOCK_OWNER=0
+  sidebar_lock_release "$(sidebar_lifecycle_lock_name)"
 }
 
 window_non_sidebar_panes_csv() {

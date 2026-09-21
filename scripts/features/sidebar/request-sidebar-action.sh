@@ -30,8 +30,8 @@ action_file="$state_dir/sidebar-$current_pane.actions"
 lock_name="@tmux_sidebar_action_${current_pane//%/p}"
 tmp_file=""
 
-tmux wait-for -L "$lock_name"
-trap 'tmux wait-for -U "$lock_name" 2>/dev/null || true; [ -z "$tmp_file" ] || rm -f "$tmp_file"' EXIT
+trap 'sidebar_lock_release "$lock_name"; [ -z "$tmp_file" ] || rm -f "$tmp_file"' EXIT
+sidebar_lock_acquire "$lock_name"
 
 tmp_file="$(mktemp "$state_dir/.sidebar-action.XXXXXX")"
 if [ -f "$action_file" ]; then

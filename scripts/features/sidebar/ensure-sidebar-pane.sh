@@ -31,30 +31,17 @@ sidebar_pane_option="$(sidebar_window_option "pane" "$current_window")"
 sidebar_creating_option="$(sidebar_window_option "creating" "$current_window")"
 sidebar_focus_option="$(sidebar_focus_request_option "$current_window")"
 ensure_lock="@tmux_sidebar_ensure_$(window_key_for_id "$current_window")"
-ensure_lock_acquired=0
 
 cleanup() {
   tmux set-option -g -u "$sidebar_creating_option" 2>/dev/null || true
   tmux set-option -g -u "$sidebar_focus_option" 2>/dev/null || true
-  if [ "$ensure_lock_acquired" = "1" ]; then
-    tmux wait-for -U "$ensure_lock" 2>/dev/null || true
-  fi
+  sidebar_lock_release "$ensure_lock"
   release_sidebar_lifecycle_lock
 }
 trap cleanup EXIT
 
 acquire_sidebar_lifecycle_lock
-
-# `tmux wait-for -L` below provides the cross-platform lock. Use `flock`
-# opportunistically when available, but do not require it on systems like macOS.
-if command -v flock >/dev/null 2>&1; then
-  lockfile="/tmp/tmux-sidebar-ensure-$(window_key_for_id "$current_window").lock"
-  exec 9>"$lockfile"
-  flock -n 9 || exit 0
-fi
-
-tmux wait-for -L "$ensure_lock"
-ensure_lock_acquired=1
+sidebar_lock_acquire "$ensure_lock"
 sidebar_enabled || exit 0
 
 cmd_pattern="$(sidebar_pane_command_awk_pattern)"

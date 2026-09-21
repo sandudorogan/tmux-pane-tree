@@ -130,7 +130,7 @@ fake_tmux_no_sidebar() {
   rm -f "$TEST_TMUX_DATA_DIR/next_sidebar_pane_id.txt"
   rm -f "$TEST_TMUX_DATA_DIR/fail_allow_set_title.txt"
   rm -f "$TEST_TMUX_DATA_DIR/split_window_pane_title.txt"
-  rm -f "$TEST_TMUX_DATA_DIR/disable_enabled_on_wait_for_lock.txt"
+  rm -f "$TEST_TMUX_DATA_DIR/disable_enabled_on_lock.txt"
 }
 
 fake_tmux_sidebar_count() {
@@ -179,6 +179,13 @@ if not replaced:
     updated.append(f"pane_width={pane_width}")
 path.write_text("\n".join(updated) + "\n")
 PY
+}
+
+assert_file_absent() {
+  local path="$1"
+  if [ -e "$path" ] || [ -L "$path" ]; then
+    fail "expected [$path] to be gone"
+  fi
 }
 
 assert_file_not_contains() {
@@ -565,16 +572,6 @@ PY
     [ -n "$shell_command" ] || exit 0
     bash -c "$shell_command"
     ;;
-  wait-for)
-    printf 'wait-for %s\n' "$*" >> "$data_dir/commands.log"
-    if [ "${1:-}" = "-L" ] && [ -f "$data_dir/disable_enabled_on_wait_for_lock.txt" ]; then
-      lock_name="$(cat "$data_dir/disable_enabled_on_wait_for_lock.txt")"
-      if [ -z "$lock_name" ] || [ "$lock_name" = "${2:-}" ]; then
-        printf '0\n' > "$data_dir/option__tmux_sidebar_enabled.txt"
-        rm -f "$data_dir/disable_enabled_on_wait_for_lock.txt"
-      fi
-    fi
-    ;;
   set-option)
     printf 'set-option %s\n' "$*" >> "$data_dir/commands.log"
     scope=""
@@ -643,6 +640,13 @@ PY
     ;;
   show-options)
     option_name="${*: -1}"
+    if [ -f "$data_dir/disable_enabled_on_lock.txt" ]; then
+      held_lock="$(cat "$data_dir/disable_enabled_on_lock.txt")"
+      if [ -L "$held_lock" ]; then
+        printf '0\n' > "$data_dir/option__tmux_sidebar_enabled.txt"
+        rm -f "$data_dir/disable_enabled_on_lock.txt"
+      fi
+    fi
     if [ "$option_name" = "-g" ]; then
       for option_file in "$data_dir"/option_*.txt; do
         [ -e "$option_file" ] || exit 0
