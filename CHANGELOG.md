@@ -4,6 +4,10 @@ All notable project versions are documented here.
 
 ## Unreleased
 
+## 0.4.0
+
+- The sidebar re-reads its curses dimensions on `KEY_RESIZE` and survives a pane shrink instead of crashing.
+- Trimmed the README to the essentials and redesigned the landing page.
 - Claude SubagentStart/Stop hooks now maintain a per-pane subagent count and show a dedicated `↳`-prefixed badge while subagents run, instead of being suppressed. The count resets at turn and session boundaries so a lost stop event can't pin the badge.
 - Hook wrappers opt into subagent lifecycle events via `HOOK_SUBAGENT_TRACKING`; other agents keep the previous suppression behavior.
 - The built-in hook installer now keeps only the three most recent backups per config file.
