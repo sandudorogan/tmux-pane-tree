@@ -51,11 +51,11 @@ for entrypoint in "$REPO_ROOT"/*.tmux "$REPO_ROOT/tmux-pane-tree.conf"; do
 done
 
 reset_plugin_state
-real_tmux_run_shell_capture "$REPO_ROOT/tmux-pane-tree.tmux"
+real_tmux_run_shell_capture "$REPO_ROOT/sidebar.tmux"
 assert_config_applied
 
 reset_plugin_state
-real_tmux_run_shell_capture "$REPO_ROOT/sidebar.tmux"
+real_tmux_run_shell_capture "$REPO_ROOT/tmux-pane-tree.tmux"
 assert_eq "$(real_tmux show-options -gqv @tmux_sidebar_dir)" ""
 assert_eq "$(real_tmux show-options -gqv @tmux_pane_tree_dir)" ""
 assert_eq "$(registered_hook_count)" "0"

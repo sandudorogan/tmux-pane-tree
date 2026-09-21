@@ -13,6 +13,7 @@ test_new_public_entrypoint_exists_with_wiring() {
 }
 
 test_legacy_sidebar_tmux_still_sources_the_config() {
+  assert_file_contains "$REPO_ROOT/sidebar.tmux" 'tmux source-file "$CURRENT_DIR/tmux-pane-tree.conf"'
   assert_file_contains "$REPO_ROOT/sidebar.tmux" 'source-file -F "#{d:current_file}/tmux-pane-tree.conf"'
   assert_file_not_contains "$REPO_ROOT/sidebar.tmux" 'set-hook'
   assert_file_not_contains "$REPO_ROOT/sidebar.tmux" 'bind-key'
@@ -20,7 +21,6 @@ test_legacy_sidebar_tmux_still_sources_the_config() {
 
 test_current_public_entrypoint_is_a_thin_polyglot() {
   [ -f "$REPO_ROOT/tmux-pane-tree.tmux" ] || fail "expected tmux-pane-tree.tmux entrypoint at repo root"
-  assert_file_contains "$REPO_ROOT/tmux-pane-tree.tmux" 'tmux source-file "$CURRENT_DIR/tmux-pane-tree.conf"'
   assert_file_contains "$REPO_ROOT/tmux-pane-tree.tmux" 'source-file -F "#{d:current_file}/tmux-pane-tree.conf"'
   assert_file_not_contains "$REPO_ROOT/tmux-pane-tree.tmux" 'set-hook'
   assert_file_not_contains "$REPO_ROOT/tmux-pane-tree.tmux" 'bind-key'

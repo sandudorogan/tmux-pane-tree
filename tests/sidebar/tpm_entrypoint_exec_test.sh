@@ -4,7 +4,7 @@ set -euo pipefail
 . "$(dirname "$0")/../testlib.sh"
 
 REPO_ROOT="$(CDPATH= cd -- "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-APPLIER="tmux-pane-tree.tmux"
+APPLIER="sidebar.tmux"
 
 tmux_entrypoints() {
   find "$REPO_ROOT" -maxdepth 1 -type f -name '*.tmux' | sort
@@ -18,7 +18,7 @@ exec_entrypoint() {
 test_entrypoints_are_exactly_the_expected_set() {
   local found
   found="$(cd "$REPO_ROOT" && printf '%s\n' *.tmux | sort)"
-  assert_eq "$found" "$(printf 'sidebar.tmux\n%s' "$APPLIER")"
+  assert_eq "$found" "$(printf '%s\ntmux-pane-tree.tmux' "$APPLIER")"
 }
 
 test_entrypoints_are_committed_executable() {
@@ -50,7 +50,7 @@ test_exactly_one_entrypoint_applies_the_config_on_exec() {
   assert_eq "$total" "1"
 }
 
-test_current_public_name_is_the_applier() {
+test_sidebar_tmux_is_the_applier() {
   exec_entrypoint "$REPO_ROOT/$APPLIER"
   assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" "source-file $REPO_ROOT/tmux-pane-tree.conf"
 }
@@ -59,4 +59,4 @@ test_entrypoints_are_exactly_the_expected_set
 test_entrypoints_are_committed_executable
 test_entrypoints_exit_zero_when_tpm_execs_them
 test_exactly_one_entrypoint_applies_the_config_on_exec
-test_current_public_name_is_the_applier
+test_sidebar_tmux_is_the_applier

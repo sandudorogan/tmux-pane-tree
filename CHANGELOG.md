@@ -13,7 +13,7 @@ All notable project versions are documented here.
 - Keep the cursor label on idle cursor-agent panes while the pane still runs the command captured in hook state, instead of falling back to `node`.
 - `hook-cursor.sh` no longer uses `mapfile`, so it survives being run by the system bash 3.2.
 - Replaced the `tmux wait-for` mutexes with pid-stamped lock files, so a hook killed mid-update no longer wedges the plugin. A `wait-for` channel lives in the tmux server and outlives its holder, so one lost release left every later pane-state, notify, action and ensure call blocked forever, piling up hundreds of stuck tmux clients.
-- Fixed TPM reporting `'~/.tmux/plugins/tpm/tpm' returned 126` on load by moving the sourced-only tmux config to `tmux-pane-tree.conf`. Configs that loaded the plugin with `run-shell .../sidebar.tmux` must switch to `source-file .../tmux-pane-tree.conf`, since that form now returns silently without loading anything.
+- Fixed TPM reporting `'~/.tmux/plugins/tpm/tpm' returned 126` on load by moving the sourced-only tmux config to `tmux-pane-tree.conf`. Existing `source-file` and `run-shell` lines keep working.
 
 ## 0.3.3
 

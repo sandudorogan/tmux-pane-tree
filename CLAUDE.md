@@ -5,8 +5,8 @@ A tmux plugin that adds an interactive sidebar showing sessions, windows, and pa
 ## Architecture
 
 ```
-tmux-pane-tree.tmux   <- polyglot TPM entry point, applies tmux-pane-tree.conf
-sidebar.tmux          <- legacy-named polyglot, no-op under TPM, sources the conf when sourced
+sidebar.tmux          <- polyglot TPM entry point, applies tmux-pane-tree.conf
+tmux-pane-tree.tmux   <- polyglot, no-op under TPM, sources the conf when sourced
 tmux-pane-tree.conf   <- primary tmux config: hooks, keybindings, startup
 sidebar.conf          <- legacy config (kept for install-live.sh compatibility)
 scripts/
@@ -128,11 +128,8 @@ tmux source-file tmux-pane-tree.conf
 
 ### tmux plugin conventions
 
-- Top-level `*.tmux` files are polyglots (bash + tmux conf) — TPM executes them as bash scripts, tmux `source-file` reads them as config
-- TPM execs every **top-level** `*.tmux` in the plugin dir, so each one must be a polyglot committed `100755`; top-level config meant only to be sourced uses `.conf`. This does not apply to `.tmux` fragments generated at runtime under the state dir (`bind-mouse.tmux`, `menu-cmd.tmux`) — TPM never sees those
 - `tmux-pane-tree.conf` is the primary tmux config that registers hooks and keybindings
-- Exactly one top-level `*.tmux` applies that config from its bash branch, so TPM exec'ing all of them applies it once. That one is `tmux-pane-tree.tmux`, the current public name — keep the applier on the name that outlives the compatibility window
-- `sidebar.tmux` is the legacy-named entrypoint: its bash branch is `exit 0`, its tmux branch sources `tmux-pane-tree.conf` so existing `source-file` lines keep working
+- TPM execs every top-level `*.tmux` in the plugin dir, so each one is a polyglot (bash + tmux conf) committed `100755`, and config meant only to be sourced uses `.conf`. Only `sidebar.tmux` applies the conf from its bash branch; `tmux-pane-tree.tmux` execs to `exit 0` so TPM applies the config once. Both source the conf when read by `source-file`
 - `sidebar.conf` is the legacy config, kept for `install-live.sh` compatibility patching
 - Use `#{d:current_file}` for relative paths in hook registrations
 - Hook indices (e.g. `[198]`) are namespaced to avoid collisions with other plugins
