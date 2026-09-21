@@ -5,8 +5,9 @@ A tmux plugin that adds an interactive sidebar showing sessions, windows, and pa
 ## Architecture
 
 ```
-sidebar.tmux          <- polyglot shim (TPM entry point), sources tmux-pane-tree.tmux
-tmux-pane-tree.tmux   <- primary tmux config: hooks, keybindings, startup
+sidebar.tmux          <- polyglot TPM entry point, applies tmux-pane-tree.conf
+tmux-pane-tree.tmux   <- polyglot, no-op under TPM, sources the conf when sourced
+tmux-pane-tree.conf   <- primary tmux config: hooks, keybindings, startup
 sidebar.conf          <- legacy config (kept for install-live.sh compatibility)
 scripts/
   core/
@@ -87,7 +88,7 @@ To manually verify changes without install-live:
 ```bash
 # Source the plugin directly in a test session
 tmux new-session -d -s sidebar-test
-tmux source-file sidebar.tmux
+tmux source-file tmux-pane-tree.conf
 ```
 
 ### After any code change
@@ -127,8 +128,8 @@ tmux source-file sidebar.tmux
 
 ### tmux plugin conventions
 
-- `sidebar.tmux` is a polyglot shim (bash + tmux conf) that sources `tmux-pane-tree.tmux` — TPM executes `.tmux` files as bash scripts, tmux `source-file` reads them as config
-- `tmux-pane-tree.tmux` is the primary tmux config that registers hooks and keybindings
+- `tmux-pane-tree.conf` is the primary tmux config that registers hooks and keybindings
+- TPM execs every top-level `*.tmux` in the plugin dir, so each one is a polyglot (bash + tmux conf) committed `100755`, and config meant only to be sourced uses `.conf`. Only `sidebar.tmux` applies the conf from its bash branch; `tmux-pane-tree.tmux` execs to `exit 0` so TPM applies the config once. Both source the conf when read by `source-file`
 - `sidebar.conf` is the legacy config, kept for `install-live.sh` compatibility patching
 - Use `#{d:current_file}` for relative paths in hook registrations
 - Hook indices (e.g. `[198]`) are namespaced to avoid collisions with other plugins

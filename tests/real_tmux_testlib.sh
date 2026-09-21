@@ -185,7 +185,7 @@ real_tmux_start_server() {
 }
 
 real_tmux_source_plugin() {
-  real_tmux_source_file "$REPO_ROOT/tmux-pane-tree.tmux"
+  real_tmux_source_file "$REPO_ROOT/tmux-pane-tree.conf"
 }
 
 real_tmux_source_file() {

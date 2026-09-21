@@ -22,7 +22,8 @@ run-shell '~/.config/tmux/plugins/tmux-sidebar/sidebar.tmux'
 source-file ~/.config/tmux/plugins/tmux-sidebar/sidebar.tmux
 source-file ~/.config/tmux/plugins/tmux-pane-tree/sidebar.tmux
 source-file ~/.config/tmux/plugins/tmux-pane-tree/tmux-pane-tree.tmux
-source-file ~/.config/tmux/plugins/tmux-pane-tree/tmux-pane-tree.tmux
+source-file ~/.config/tmux/plugins/tmux-pane-tree/tmux-pane-tree.conf
+source-file ~/.config/tmux/plugins/tmux-pane-tree/tmux-pane-tree.conf
 EOF
 
 cat > "$CLAUDE_SETTINGS" <<'EOF'
@@ -45,11 +46,14 @@ OPENCODE_PLUGIN="$OPENCODE_PLUGIN" \
 TIMESTAMP="20260320000000" \
 bash "$REPO_ROOT/scripts/install-live.sh"
 
-assert_file_contains "$PLUGIN_DST/tmux-pane-tree.tmux" 'scripts/features/context-menu/bind-context-menu.sh'
-assert_file_contains "$TMUX_CONF" "source-file $NORMALIZED_PLUGIN_DST/tmux-pane-tree.tmux"
+assert_file_contains "$PLUGIN_DST/tmux-pane-tree.conf" 'scripts/features/context-menu/bind-context-menu.sh'
+[ -x "$PLUGIN_DST/sidebar.tmux" ] || fail "expected installed sidebar.tmux to be executable"
+[ -x "$PLUGIN_DST/tmux-pane-tree.tmux" ] || fail "expected installed tmux-pane-tree.tmux to be executable"
+assert_file_contains "$TMUX_CONF" "source-file $NORMALIZED_PLUGIN_DST/tmux-pane-tree.conf"
 assert_file_not_contains "$TMUX_CONF" "tmux-sidebar/sidebar.tmux"
 assert_file_not_contains "$TMUX_CONF" "tmux-pane-tree/sidebar.tmux"
-pane_tree_sources="$(grep -c 'tmux-pane-tree.tmux' "$TMUX_CONF" || true)"
+assert_file_not_contains "$TMUX_CONF" "tmux-pane-tree.tmux"
+pane_tree_sources="$(grep -c 'tmux-pane-tree.conf' "$TMUX_CONF" || true)"
 assert_eq "$pane_tree_sources" "1"
 assert_file_not_contains "$TMUX_CONF" "run-shell '$NORMALIZED_PLUGIN_DST/sidebar.tmux'"
 assert_file_not_contains "$TMUX_CONF" "run-shell '~/.config/tmux/plugins/tmux-sidebar/sidebar.tmux'"
