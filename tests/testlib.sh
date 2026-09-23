@@ -286,6 +286,17 @@ case "$command_name" in
     else
       result="${result//\#\{pane_active\}/0}"
     fi
+    current_pane="$(cat "$data_dir/current_pane.txt")"
+    current_meta_file="$data_dir/pane_${current_pane//%/}.meta"
+    if [ -f "$current_meta_file" ]; then
+      current_window_id="$(sed -n 's/^window_id=//p' "$current_meta_file" | tr -d "'")"
+      if [ "$window_id" = "$current_window_id" ]; then
+        result="${result//\#\{window_active\}/1}"
+      else
+        result="${result//\#\{window_active\}/0}"
+      fi
+    fi
+    result="${result//\#\{session_attached\}/1}"
     printf '%s\n' "$result"
     ;;
   list-panes)
