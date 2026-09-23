@@ -14,7 +14,12 @@ if [ -n "$pane_id" ]; then
   pane_title="$(tmux display-message -p -t "$pane_id" '#{pane_title}' 2>/dev/null || true)"
   pane_command="$(tmux display-message -p -t "$pane_id" '#{pane_current_command}' 2>/dev/null || true)"
   if ! pane_is_known_sidebar "$pane_id" "$pane_title" "$pane_command"; then
-    tmux set-option -g @tmux_sidebar_main_pane "$pane_id"
+    focus_state="$(tmux display-message -p -t "$pane_id" '#{pane_active}|#{window_active}|#{session_attached}' 2>/dev/null || true)"
+    IFS='|' read -r pane_active window_active session_attached <<< "$focus_state"
+    if [ "$pane_active" = "1" ] && [ "$window_active" = "1" ] && [ "${session_attached:-0}" -gt 0 ]; then
+      tmux set-option -g @tmux_sidebar_main_pane "$pane_id"
+      signal_sidebar_refresh
+    fi
   fi
 
   if [[ "$pane_id" =~ ^%[0-9]+$ ]]; then

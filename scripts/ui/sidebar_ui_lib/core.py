@@ -5,6 +5,7 @@ import os
 import re
 import shlex
 import subprocess
+import time
 from pathlib import Path
 
 
@@ -188,6 +189,35 @@ def normalize_command_token(command: str) -> str:
 
 def focus_main_pane() -> None:
     subprocess.run(["bash", str(feature_script("sidebar", "focus-main-pane.sh"))], check=False)
+
+
+def wait_for_sidebar_selection(window_id: str, pane_id: str, timeout: float = 0.5) -> None:
+    try:
+        pane_lines = run_tmux(
+            "list-panes", "-t", window_id, "-F", "#{pane_id}|#{pane_title}|#{pane_current_command}"
+        ).splitlines()
+    except subprocess.CalledProcessError:
+        return
+    sidebar_id = next(
+        (
+            candidate_id
+            for line in pane_lines
+            for candidate_id, title, command in [line.split("|", 2)]
+            if is_sidebar_pane(title, command)
+        ),
+        "",
+    )
+    if not sidebar_id:
+        return
+    selection_path = STATE_DIR / f"sidebar-{sidebar_id}.selected"
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        try:
+            if selection_path.read_text().strip() == pane_id:
+                return
+        except OSError:
+            pass
+        time.sleep(0.01)
 
 
 def toggle_hide_panes() -> None:
