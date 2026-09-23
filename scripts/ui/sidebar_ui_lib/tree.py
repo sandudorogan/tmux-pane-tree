@@ -117,19 +117,23 @@ def load_tree() -> list[dict]:
     for session_name, session in sessions.items():
         filtered_windows: OrderedDict[str, dict] = OrderedDict()
         for window_id, window in session["windows"].items():
+            content_panes = [
+                pane for pane in window["panes"]
+                if not is_sidebar_pane(pane["title"], pane["label"])
+            ]
             panes = [
-                pane
-                for pane in window["panes"]
-                if not is_sidebar_pane(pane["title"], pane["label"]) and pane_matches_filter(pane, pane_states.get(pane["id"], {}), filter_tokens)
+                pane for pane in content_panes
+                if pane_matches_filter(pane, pane_states.get(pane["id"], {}), filter_tokens)
             ]
             if not panes:
                 continue
-            filtered_windows[window_id] = {**window, "panes": panes}
+            filtered_windows[window_id] = {**window, "panes": panes, "content_pane_count": len(content_panes)}
         if filtered_windows:
             filtered_sessions[session_name] = {**session, "windows": filtered_windows}
     sessions = filtered_sessions
 
     hide_panes = tmux_option_value("hide_panes").lower() in ("on", "1", "true", "yes")
+    compact_single_panes = tmux_option_value("compact_single_panes").lower() in ("on", "1", "true", "yes")
 
     rows: list[dict] = []
     session_items = ordered_sessions(sessions)
@@ -144,7 +148,15 @@ def load_tree() -> list[dict]:
             window_prefix = session_prefix + ("   " if window_last else "│  ")
             display_name = window_display_name(window["name"], window["panes"], pane_states)
             visible_panes = window["panes"]
-            if hide_panes:
+            compact_window = compact_single_panes and window["content_pane_count"] == 1
+            if compact_window:
+                pane = visible_panes[0]
+                pane_state = pane_states.get(pane["id"], {})
+                badge = badge_for_status(effective_pane_status(pane["id"], pane["label"], pane["title"], pane_state))
+                if badge:
+                    display_name = f"{display_name} {badge}"
+                visible_panes = []
+            elif hide_panes:
                 visible_panes = [
                     pane for pane in window["panes"]
                     if badge_for_status(effective_pane_status(
@@ -157,7 +169,9 @@ def load_tree() -> list[dict]:
                 "window": window["id"],
                 "text": f"{session_prefix}{'└─' if window_last else '├─'} {display_name}",
             }
-            if hide_panes and not visible_panes:
+            if compact_window:
+                window_row["pane_id"] = pane["id"]
+            elif hide_panes and not visible_panes:
                 window_row["pane_id"] = window["id"]
             rows.append(window_row)
             for pane_index, pane in enumerate(visible_panes):

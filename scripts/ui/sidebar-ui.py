@@ -178,6 +178,16 @@ def selected_pane_row(pane_rows: list[dict], selected_pane_id: str) -> dict | No
     return next((row for row in pane_rows if row["pane_id"] == selected_pane_id), pane_rows[0] if pane_rows else None)
 
 
+def activate_row(row: dict) -> None:
+    subprocess.run(["tmux", "switch-client", "-t", row["session"]], check=False)
+    if row["kind"] == "session":
+        return
+    subprocess.run(["tmux", "select-window", "-t", row["window"]], check=False)
+    pane_id = row.get("pane_id", "")
+    if pane_id.startswith("%"):
+        subprocess.run(["tmux", "select-pane", "-t", pane_id], check=False)
+
+
 def seed_jump_list(
     jump_list: list[JumpEntry], jump_index: int, main_pane_id: str, selected_pane_id: str
 ) -> tuple[list[JumpEntry], int]:
@@ -415,19 +425,11 @@ def run_interactive(stdscr) -> None:
                 row_idx = my + scroll_offset
                 if 0 <= row_idx < len(rows):
                     clicked = rows[row_idx]
-                    if clicked["kind"] == "pane":
-                        selected_pane_id = clicked["pane_id"]
-                        needs_render = True
-                        subprocess.run(["tmux", "switch-client", "-t", clicked["session"]], check=False)
-                        subprocess.run(["tmux", "select-window", "-t", clicked["window"]], check=False)
-                        subprocess.run(["tmux", "select-pane", "-t", clicked["pane_id"]], check=False)
-                        next_refresh_at = 0.0
-                    elif clicked["kind"] == "window":
-                        subprocess.run(["tmux", "switch-client", "-t", clicked["session"]], check=False)
-                        subprocess.run(["tmux", "select-window", "-t", clicked["window"]], check=False)
-                        next_refresh_at = 0.0
-                    elif clicked["kind"] == "session":
-                        subprocess.run(["tmux", "switch-client", "-t", clicked["session"]], check=False)
+                    if clicked["kind"] in ("pane", "window", "session"):
+                        if clicked.get("pane_id", "").startswith("%"):
+                            selected_pane_id = clicked["pane_id"]
+                            needs_render = True
+                        activate_row(clicked)
                         next_refresh_at = 0.0
                 continue
 
@@ -575,10 +577,7 @@ def run_interactive(stdscr) -> None:
                 scroll_offset = ensure_visible(selected_index, scroll_offset, visible_lines, scrolloff)
                 needs_render = True
         elif action == "select_pane" and target is not None:
-            subprocess.run(["tmux", "switch-client", "-t", target["session"]], check=False)
-            subprocess.run(["tmux", "select-window", "-t", target["window"]], check=False)
-            if target["kind"] == "pane":
-                subprocess.run(["tmux", "select-pane", "-t", target["pane_id"]], check=False)
+            activate_row(target)
             next_refresh_at = 0.0
         elif action == "context_menu":
             selected_index = find_selected_row_index(rows, selected_pane_id)
