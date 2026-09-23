@@ -112,6 +112,7 @@ Set options with `set -g` in your tmux config.
 | `@tmux_pane_tree_session_order`           |    —    | Comma-separated session order, rest follow    |
 | `@tmux_pane_tree_filter`                  |    —    | Comma-separated pane filter (see below)       |
 | `@tmux_pane_tree_hide_panes`              |  `off`  | Show only sessions and windows                |
+| `@tmux_pane_tree_compact_single_panes`    |  `off`  | Fold single-pane windows into one row         |
 | `@tmux_pane_tree_scrolloff`               |   `8`   | Rows kept visible around the cursor, `0` off  |
 | `@tmux_pane_tree_icon_theme`              | `auto`  | `auto`, `ascii`, `unicode`, or `nerdfont`     |
 | `@tmux_pane_tree_icon_<app>`              |    —    | Override one app icon                         |
@@ -133,6 +134,15 @@ metadata. `f` toggles it at runtime.
 
 ```tmux
 set -g @tmux_pane_tree_filter "claude,codex,cursor,opencode"
+```
+
+**Compact single-pane windows.** Set `@tmux_pane_tree_compact_single_panes` to
+`on` to show a window with one content pane as one selectable row. The row
+retains the pane's agent status badge. The sidebar pane does not count, and
+filtering does not turn a multi-pane window into a compact row.
+
+```tmux
+set -g @tmux_pane_tree_compact_single_panes on
 ```
 
 **Shortcuts.** Actions: `add_window` (`aw`), `add_session` (`as`), `go_top`
