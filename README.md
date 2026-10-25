@@ -38,6 +38,11 @@ badges for `claude`, `codex`, `cursor`, `opencode`, `pi`, and `kiro`.
 
 `needs-input` clears when you focus the pane. `done` stays until the next run.
 
+Claude's live `↓ to manage` background-task hint also shows `↳⏳`, even when
+the parent chat is idle or its completion hook has cleared the worker count.
+The badge clears when the hint disappears. Permission requests and errors
+keep their badges while background work continues.
+
 Opening the agent overview with the left arrow in Codex or Claude Code shows
 `≡` beside the pane name. It replaces the task badge while the overview is
 open and clears when you return to a chat. Detection uses Codex's visible

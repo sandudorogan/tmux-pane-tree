@@ -299,6 +299,9 @@ def agent_terminal_status(pane_id: str, app: str, title: str) -> str:
         footer = "\n".join(lines[-5:])
         if "New sessions:" in header and re.search(r"enter to open.*space to reply", footer):
             return "command-center"
+        task_footer = re.split(r"^\s*─{3,}[^\n]*$", capture, flags=re.MULTILINE)[-1]
+        if re.match(r"\s*⏵⏵.*?·\s*↓\s+to\s+manage(?:\s|$)", task_footer, re.DOTALL):
+            return "subagent-running"
         return ""
     if re.match(r"\s*Agent command center\s+Group:", capture):
         return "command-center"
@@ -315,6 +318,8 @@ def effective_pane_status(pane_id: str, command: str, title: str, state: dict | 
     status = str((state or {}).get("status", "")).strip().lower()
     terminal_status = agent_terminal_status(pane_id, live_app, title)
     if terminal_status:
+        if terminal_status == "subagent-running" and status in ("needs-input", "error"):
+            return status
         return terminal_status
     if live_app == "codex":
         if status in ACTIVE_STATUSES:
