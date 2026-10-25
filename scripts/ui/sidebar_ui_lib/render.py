@@ -194,54 +194,79 @@ def _label_start(line: str) -> int:
 
 
 def help_lines(shortcuts: dict[str, str], width: int, toggle_key: str, focus_key: str) -> list[str]:
-    bindings = [
-        (f"prefix {toggle_key}", "Toggle sidebar"),
-        (f"prefix {focus_key}", "Focus sidebar / main pane"),
-        ("?", "Show help"),
-        ("j / k, Down / Up", "Move selection"),
-        (shortcuts["go_top"], "Go to top"),
-        (shortcuts["go_bottom"], "Go to bottom"),
-        (shortcuts["jump_back"], "Jump back"),
-        (shortcuts["jump_forward"], "Jump forward"),
-        ("Enter", "Open selected pane"),
-        (shortcuts["add_window"], "Add window"),
-        (shortcuts["add_session"], "Add session"),
-        (shortcuts["rename_window"], "Rename window"),
-        (shortcuts["rename_session"], "Rename session"),
-        (shortcuts["close_pane"], "Close pane / window"),
-        (shortcuts["toggle_filter"], "Toggle pane filter"),
-        ("p", "Toggle hide panes"),
-        ("/", "Search"),
-        ("Enter (search)", "Confirm search"),
-        ("Backspace (search)", "Delete character"),
-        ("Esc (search)", "Cancel / clear search"),
-        ("n / N", "Next / previous match"),
-        ("m / right click", "Context menu"),
-        ("Left click", "Open clicked item"),
-        ("Mouse wheel", "Scroll"),
-        ("C-l", "Focus main pane"),
-        ("q / Esc", "Close sidebar"),
-        ("q / Esc (help)", "Close help"),
-        ("j / k, Down / Up (help)", "Scroll help"),
-        ("PgUp / PgDn (help)", "Scroll help by page"),
-        ("Home / End (help)", "First / last help page"),
+    groups = [
+        ("Navigation", [
+            ("j / k, Up / Down", "Move selection"),
+            ("Enter", "Open selected pane"),
+            (shortcuts["go_top"], "Go to top"),
+            (shortcuts["go_bottom"], "Go to bottom"),
+            (shortcuts["jump_back"], "Jump back"),
+            (shortcuts["jump_forward"], "Jump forward"),
+            ("C-l", "Focus main pane"),
+        ]),
+        ("Search", [
+            ("/", "Start search"),
+            ("Enter", "Confirm search"),
+            ("Backspace", "Delete character"),
+            ("Esc", "Cancel / clear search"),
+            ("n / N", "Next / previous match"),
+        ]),
+        ("Windows & sessions", [
+            (shortcuts["add_window"], "Add window"),
+            (shortcuts["add_session"], "Add session"),
+            (shortcuts["rename_window"], "Rename window"),
+            (shortcuts["rename_session"], "Rename session"),
+            (shortcuts["close_pane"], "Close pane / window"),
+        ]),
+        ("View & mouse", [
+            (shortcuts["toggle_filter"], "Toggle pane filter"),
+            ("p", "Toggle hide panes"),
+            ("m / right click", "Open context menu"),
+            ("Left click", "Open clicked item"),
+            ("Mouse wheel", "Scroll"),
+        ]),
+        ("Sidebar", [
+            (f"prefix {toggle_key}", "Toggle sidebar"),
+            (f"prefix {focus_key}", "Focus sidebar / main pane"),
+            ("?", "Show help"),
+            ("q / Esc", "Close sidebar"),
+        ]),
+        ("In help", [
+            ("q / Esc", "Return to tree"),
+            ("j / k, Up / Down", "Scroll help"),
+            ("PgUp / PgDn", "Scroll by page"),
+            ("Home / End", "First / last help page"),
+        ]),
     ]
-    return [line for key, label in bindings for line in textwrap.wrap(
-        f"{key}: {label}", width=max(1, width), subsequent_indent="  " if width > 2 else "",
-    )]
+
+    def wrapped(text: str, indent: int) -> list[str]:
+        padding = " " * min(indent, max(0, width - 1))
+        return textwrap.wrap(
+            text, width=max(1, width), initial_indent=padding, subsequent_indent=padding,
+        )
+
+    lines = [""]
+    for title, bindings in groups:
+        lines.extend([*wrapped(title, 1), ""])
+        for key, label in bindings:
+            lines.extend([*wrapped(key, 2), *wrapped(label, 4), ""])
+        lines.append("")
+    return lines[:-2]
 
 
-def render_help(stdscr, lines: list[str], scroll_offset: int) -> None:
+def render_help(stdscr, lines: list[str], scroll_offset: int, heading_attr: int = curses.A_BOLD) -> None:
     width = max(0, curses.COLS - 1)
     height = max(0, curses.LINES - 2)
     try:
         stdscr.erase()
         if curses.LINES > 0:
-            stdscr.addnstr(0, 0, "Help", width, curses.A_BOLD)
+            stdscr.addnstr(0, 0, " Help", width, heading_attr)
         for y, line in enumerate(lines[scroll_offset:scroll_offset + height], 1):
-            stdscr.addnstr(y, 0, line, width)
+            indent = len(line) - len(line.lstrip())
+            attr = heading_attr if indent == 1 else curses.A_BOLD if indent == 2 else 0
+            stdscr.addnstr(y, 0, line, width, attr)
         if curses.LINES > 1:
-            stdscr.addnstr(curses.LINES - 1, 0, "q close | j/k scroll", width, curses.A_DIM)
+            stdscr.addnstr(curses.LINES - 1, 0, " q close   j/k scroll", width, curses.A_DIM)
         curses.curs_set(0)
     except curses.error:
         return

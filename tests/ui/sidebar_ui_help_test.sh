@@ -16,17 +16,21 @@ from sidebar_ui_lib.render import help_lines
 
 shortcuts = dict(ui.DEFAULT_SHORTCUTS, close_pane="dd", jump_back="C-p")
 lines = help_lines(shortcuts, 80, "s", "S")
-assert "prefix s: Toggle sidebar" in lines
-assert "prefix S: Focus sidebar / main pane" in lines
-assert "dd: Close pane / window" in lines
-assert "C-p: Jump back" in lines
-assert "x: Close pane / window" not in lines
+assert "  prefix s" in lines
+assert "  prefix S" in lines
+assert "  dd" in lines
+assert "  C-p" in lines
+assert "  x" not in lines
+assert lines[:4] == ["", " Navigation", "", "  j / k, Up / Down"]
+assert lines[4:7] == ["    Move selection", "", "  Enter"]
+for section in ("Navigation", "Search", "Windows & sessions", "View & mouse", "Sidebar", "In help"):
+    assert " " + section in lines
 for action in shortcuts:
-    assert any(line.startswith(shortcuts[action] + ":") for line in lines), action
-for key in ("?", "j / k, Down / Up", "Enter", "p", "/", "Enter (search)",
-            "Backspace (search)", "Esc (search)", "n / N", "m / right click",
-            "Left click", "Mouse wheel", "C-l", "q / Esc", "q / Esc (help)"):
-    assert any(line.startswith(key + ":") for line in lines), key
+    assert "  " + shortcuts[action] in lines, action
+for key in ("?", "j / k, Up / Down", "Enter", "p", "/", "Backspace", "Esc",
+            "n / N", "m / right click", "Left click", "Mouse wheel", "C-l",
+            "q / Esc", "PgUp / PgDn", "Home / End"):
+    assert "  " + key in lines, key
 for width in (0, 1, 2, 24):
     wrapped = help_lines(shortcuts, width, "t", "T")
     assert all(len(line) <= max(1, width) for line in wrapped)
@@ -66,6 +70,7 @@ class Screen:
         self.keys = iter(keys)
         self.lines = {}
         self.frames = []
+        self.attributes = []
 
     def keypad(self, enabled):
         pass
@@ -81,6 +86,7 @@ class Screen:
         assert x + limit < ui.curses.COLS
         row = self.lines.get(y, " " * (ui.curses.COLS - 1))
         self.lines[y] = row[:x] + text[:limit] + row[x + min(len(text), limit):]
+        self.attributes.append((text, attr))
 
     def move(self, y, x):
         pass
@@ -106,8 +112,9 @@ def run(keys, width=80, height=40):
 # q leaves help, restores selection, and clears an unfinished shortcut.
 frames = run([ord(c) for c in "ja?xpm/\nwq wq"])
 assert "Help" in frames[3]
-assert "dd: Close pane / window" in frames[3]
-assert "prefix s: Toggle sidebar" in frames[3]
+assert "  C-p" in frames[3]
+assert "    Jump back" in frames[3]
+assert " Navigation" in frames[3]
 assert "Help" not in frames[-1]
 assert "▶ zsh" in frames[-1]
 
@@ -115,8 +122,9 @@ assert "▶ zsh" in frames[-1]
 frames = run([ord("?"), *([ui.curses.KEY_NPAGE] * 40), ui.curses.KEY_HOME,
               ui.curses.KEY_END, ui.curses.KEY_PPAGE, ord("q"), ord("q")], 25, 7)
 seen = "\n".join(frames)
-assert "prefix s: Toggle sidebar" in seen
-assert "/ last help page" in seen
+assert "  prefix s" in seen
+assert "    Toggle sidebar" in seen
+assert "First / last help" in seen
 assert frames[1] == frames[-4]
 assert frames[-3] != frames[-2]
 
@@ -147,5 +155,11 @@ assert "▶ zsh" in frames[-1]
 frames = run([ord("/"), ord("?"), 27, ord("q")])
 assert "/?" in frames[2]
 assert all("Help" not in frame for frame in frames)
+
+screen = Screen([])
+ui.curses.COLS, ui.curses.LINES = 25, 10
+ui.render_help(screen, help_lines(shortcuts, 24, "t", "T"), 0)
+assert ("  j / k, Up / Down", ui.curses.A_BOLD) in screen.attributes
+assert ("    Move selection", 0) in screen.attributes
 print("Help keys, configured bindings, scrolling, resize, and modal isolation passed")
 PY

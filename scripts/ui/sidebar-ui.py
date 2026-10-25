@@ -374,7 +374,7 @@ def run_interactive(stdscr) -> None:
                 lines = help_lines(shortcuts, curses.COLS - 1, help_toggle_key, help_focus_key)
                 help_max_offset = max(0, len(lines) - max(1, curses.LINES - 2))
                 help_offset = min(help_offset, help_max_offset)
-                render_help(stdscr, lines, help_offset)
+                render_help(stdscr, lines, help_offset, session_attr | curses.A_BOLD)
                 _write_row_map([], 0)
             else:
                 render_screen(

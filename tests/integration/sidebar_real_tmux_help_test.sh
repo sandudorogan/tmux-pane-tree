@@ -19,18 +19,20 @@ real_tmux_wait_for_capture "$sidebar_pane_id" 'editor' >/dev/null
 real_tmux select-pane -t "$sidebar_pane_id"
 
 real_tmux send-keys -t "$sidebar_pane_id" '?'
-help_capture="$(real_tmux_wait_for_capture "$sidebar_pane_id" 'q close | j/k scroll')"
+help_capture="$(real_tmux_wait_for_capture "$sidebar_pane_id" 'q close   j/k scroll')"
 assert_contains "$help_capture" 'Help'
-assert_contains "$help_capture" 'dd: Close pane / window'
+assert_contains "$help_capture" 'Navigation'
+assert_contains "$help_capture" '  j / k, Up / Down'
+assert_contains "$help_capture" '    Move selection'
 
 real_tmux send-keys -t "$sidebar_pane_id" End
-real_tmux_wait_for_capture "$sidebar_pane_id" 'help page' >/dev/null
+real_tmux_wait_for_capture "$sidebar_pane_id" 'Home / End' >/dev/null
 real_tmux send-keys -t "$sidebar_pane_id" Home
-real_tmux_wait_for_capture "$sidebar_pane_id" 'prefix t: Toggle sidebar' >/dev/null
+real_tmux_wait_for_capture "$sidebar_pane_id" 'Navigation' >/dev/null
 
 real_tmux resize-window -t "$main_window_id" -x 60 -y 8
 real_tmux send-keys -t "$sidebar_pane_id" End
-real_tmux_wait_for_capture "$sidebar_pane_id" 'help page' >/dev/null
+real_tmux_wait_for_capture "$sidebar_pane_id" 'page' >/dev/null
 real_tmux send-keys -t "$sidebar_pane_id" q
 real_tmux_wait_for_capture "$sidebar_pane_id" 'editor' >/dev/null
 assert_eq "$(real_tmux display-message -p -t "$sidebar_pane_id" '#{pane_dead}')" "0"
