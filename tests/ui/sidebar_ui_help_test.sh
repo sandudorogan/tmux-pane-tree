@@ -22,7 +22,8 @@ assert "  dd" in lines
 assert "  C-p" in lines
 assert "  x" not in lines
 assert lines[:4] == ["", " Navigation", "", "  j / k, Up / Down"]
-assert lines[4:7] == ["    Move selection", "", "  Enter"]
+assert lines[4:7] == ["    Move selection", "  Enter", "    Open selected pane"]
+assert lines[lines.index(" Search") - 2:lines.index(" Search")] == ["", ""]
 for section in ("Navigation", "Search", "Windows & sessions", "View & mouse", "Sidebar", "In help"):
     assert " " + section in lines
 for action in shortcuts:

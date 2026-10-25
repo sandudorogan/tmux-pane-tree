@@ -249,8 +249,8 @@ def help_lines(shortcuts: dict[str, str], width: int, toggle_key: str, focus_key
     for title, bindings in groups:
         lines.extend([*wrapped(title, 1), ""])
         for key, label in bindings:
-            lines.extend([*wrapped(key, 2), *wrapped(label, 4), ""])
-        lines.append("")
+            lines.extend([*wrapped(key, 2), *wrapped(label, 4)])
+        lines.extend(["", ""])
     return lines[:-2]
 
 
