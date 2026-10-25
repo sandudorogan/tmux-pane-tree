@@ -29,6 +29,7 @@ badges for `claude`, `codex`, `cursor`, `opencode`, `pi`, and `kiro`.
 
 | Badge | Status           | Meaning                          |
 | :---: | ---------------- | -------------------------------- |
+| `≡`   | command-center   | Agent overview is open           |
 | `⏳`  | running          | Agent is working                 |
 | `↳⏳` | subagent-running | Agent is delegating to subagents |
 | `❓`  | needs-input      | Waiting for permission or input  |
@@ -36,6 +37,17 @@ badges for `claude`, `codex`, `cursor`, `opencode`, `pi`, and `kiro`.
 | `❌`  | error            | Something went wrong             |
 
 `needs-input` clears when you focus the pane. `done` stays until the next run.
+
+Opening the agent overview with the left arrow in Codex or Claude Code shows
+`≡` beside the pane name. It replaces the task badge while the overview is
+open and clears when you return to a chat. Detection uses Codex's visible
+command-center header and Claude's agent-view title or navigation hints;
+no additional hooks are needed. Updates follow the sidebar's two-second refresh.
+
+```text
+  ├─ codex ≡     agent overview
+  └─ claude ⏳   working in a chat
+```
 
 ## Install
 
@@ -157,6 +169,7 @@ theme. App ids for overrides: `claude`, `codex`, `opencode`, `cursor`, `pi`,
 set -g @tmux_pane_tree_icon_theme ascii
 set -g @tmux_pane_tree_icon_claude "A"
 set -g @tmux_pane_tree_badge_running "*"
+set -g @tmux_pane_tree_badge_command_center "≡"
 ```
 
 **Colors.** Unset colors derive from your tmux theme.

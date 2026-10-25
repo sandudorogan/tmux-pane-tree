@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 DEFAULT_BADGES: dict[str, str] = {
+    "command-center": "≡",
     "running": "⏳",
     "subagent-running": "↳⏳",
     "needs-input": "❓",
@@ -8,6 +9,7 @@ DEFAULT_BADGES: dict[str, str] = {
     "error": "❌",
 }
 NERD_FONT_BADGES: dict[str, str] = {
+    "command-center": "≡",
     "running": "\uf252",
     "subagent-running": "↳\uf252",
     "needs-input": "\uf059",

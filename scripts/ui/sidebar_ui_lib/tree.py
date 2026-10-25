@@ -143,13 +143,17 @@ def load_tree() -> list[dict]:
             window_last = window_index == len(windows) - 1
             window_prefix = session_prefix + ("   " if window_last else "│  ")
             display_name = window_display_name(window["name"], window["panes"], pane_states)
+            pane_badges = {
+                pane["id"]: badge_for_status(effective_pane_status(
+                    pane["id"], pane["label"], pane["title"], pane_states.get(pane["id"], {}),
+                ))
+                for pane in window["panes"]
+            }
             visible_panes = window["panes"]
             if hide_panes:
                 visible_panes = [
                     pane for pane in window["panes"]
-                    if badge_for_status(effective_pane_status(
-                        pane["id"], pane["label"], pane["title"], pane_states.get(pane["id"], {}),
-                    ))
+                    if pane_badges[pane["id"]]
                 ]
             window_row: dict = {
                 "kind": "window",
@@ -163,7 +167,7 @@ def load_tree() -> list[dict]:
             for pane_index, pane in enumerate(visible_panes):
                 pane_last = pane_index == len(visible_panes) - 1
                 pane_state = pane_states.get(pane["id"], {})
-                badge = badge_for_status(effective_pane_status(pane["id"], pane["label"], pane["title"], pane_state))
+                badge = pane_badges[pane["id"]]
                 label = pane_display_label(pane["label"], pane["title"], pane_state)
                 icon = pane_icon(pane["label"], pane["title"], pane_state)
                 if icon:

@@ -41,6 +41,7 @@ NON_AGENT_COMMANDS = {
     "zsh",
 }
 BADGE_OPTION_SUFFIXES: dict[str, str] = {
+    "command-center": "badge_command_center",
     "running": "badge_running",
     "subagent-running": "badge_subagent_running",
     "needs-input": "badge_needs_input",
@@ -281,13 +282,26 @@ def canonical_pane_app(command: str, title: str, state: dict | None) -> str:
     return ""
 
 
-def codex_terminal_status(pane_id: str) -> str:
+def agent_terminal_status(pane_id: str, app: str, title: str) -> str:
+    if app == "claude" and re.search(r"(?:^| · )claude agents$", title.strip(), re.IGNORECASE):
+        return "command-center"
+    if app not in ("codex", "claude"):
+        return ""
     if not pane_id:
         return ""
     try:
         capture = run_tmux("capture-pane", "-pt", pane_id)
     except Exception:
         return ""
+    if app == "claude":
+        lines = capture.splitlines()
+        header = "\n".join(lines[:5])
+        footer = "\n".join(lines[-5:])
+        if "New sessions:" in header and re.search(r"enter to open.*space to reply", footer):
+            return "command-center"
+        return ""
+    if re.match(r"\s*Agent command center\s+Group:", capture):
+        return "command-center"
     if re.search(r"^\s*[•·]\s+Working \([^)]*esc to interrupt\)\s*$", capture, re.MULTILINE):
         return "running"
     return ""
@@ -299,10 +313,10 @@ def effective_pane_status(pane_id: str, command: str, title: str, state: dict | 
         return ""
 
     status = str((state or {}).get("status", "")).strip().lower()
+    terminal_status = agent_terminal_status(pane_id, live_app, title)
+    if terminal_status:
+        return terminal_status
     if live_app == "codex":
-        terminal_status = codex_terminal_status(pane_id)
-        if terminal_status:
-            return terminal_status
         if status in ACTIVE_STATUSES:
             return status
         return ""
