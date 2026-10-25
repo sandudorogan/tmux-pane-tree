@@ -30,7 +30,7 @@ for action in shortcuts:
     assert "  " + shortcuts[action] in lines, action
 for key in ("?", "j / k, Up / Down", "Enter", "p", "/", "Backspace", "Esc",
             "n / N", "m / right click", "Left click", "Mouse wheel", "C-l",
-            "q / Esc", "PgUp / PgDn", "Home / End"):
+            "q / Esc", "? / q / Esc", "PgUp / PgDn", "Home / End"):
     assert "  " + key in lines, key
 for width in (0, 1, 2, 24):
     wrapped = help_lines(shortcuts, width, "t", "T")
@@ -110,14 +110,15 @@ def run(keys, width=80, height=40):
     return screen.frames
 
 
-# q leaves help, restores selection, and clears an unfinished shortcut.
-frames = run([ord(c) for c in "ja?xpm/\nwq wq"])
-assert "Help" in frames[3]
-assert "  C-p" in frames[3]
-assert "    Jump back" in frames[3]
-assert " Navigation" in frames[3]
-assert "Help" not in frames[-1]
-assert "▶ zsh" in frames[-1]
+# q and ? leave help, restore selection, and clear an unfinished shortcut.
+for close_key in ("q", "?"):
+    frames = run([ord(c) for c in f"ja?xpm/\nw{close_key} wq"])
+    assert "Help" in frames[3]
+    assert "  C-p" in frames[3]
+    assert "    Jump back" in frames[3]
+    assert " Navigation" in frames[3]
+    assert "Help" not in frames[-1]
+    assert "▶ zsh" in frames[-1]
 
 # Help scrolls through every binding in a normal 25-column sidebar.
 frames = run([ord("?"), *([ui.curses.KEY_NPAGE] * 40), ui.curses.KEY_HOME,
@@ -146,7 +147,7 @@ def resize():
     return ui.curses.KEY_RESIZE
 
 frames = run([ord("/"), ord("z"), 10, ord("?"), ui.curses.KEY_END,
-              resize, 27, ord("q")])
+              resize, ord("?"), ord("q")])
 assert "Help" in frames[-2]
 assert "Help" not in frames[-1]
 assert "/z" in frames[-1]

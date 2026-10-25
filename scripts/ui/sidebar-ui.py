@@ -406,7 +406,7 @@ def run_interactive(stdscr) -> None:
             continue
 
         if help_mode:
-            if key in (ord("q"), 27):
+            if key in (ord("?"), ord("q"), 27):
                 help_mode = False
             elif key in (ord("j"), curses.KEY_DOWN):
                 help_offset += 1

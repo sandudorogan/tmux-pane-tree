@@ -42,4 +42,10 @@ real_tmux_wait_for_capture "$sidebar_pane_id" 'Help' >/dev/null
 real_tmux send-keys -t "$sidebar_pane_id" Escape
 real_tmux_wait_for_capture "$sidebar_pane_id" 'editor' >/dev/null
 assert_eq "$(real_tmux display-message -p -t "$sidebar_pane_id" '#{pane_dead}')" "0"
+
+real_tmux send-keys -t "$sidebar_pane_id" '?'
+real_tmux_wait_for_capture "$sidebar_pane_id" 'Help' >/dev/null
+real_tmux send-keys -t "$sidebar_pane_id" '?'
+real_tmux_wait_for_capture "$sidebar_pane_id" 'editor' >/dev/null
+assert_eq "$(real_tmux display-message -p -t "$sidebar_pane_id" '#{pane_dead}')" "0"
 printf 'Real tmux help, custom keymaps, scrolling, resize, and return passed\n'

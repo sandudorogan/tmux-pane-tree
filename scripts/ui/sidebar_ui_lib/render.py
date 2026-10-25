@@ -228,11 +228,11 @@ def help_lines(shortcuts: dict[str, str], width: int, toggle_key: str, focus_key
         ("Sidebar", [
             (f"prefix {toggle_key}", "Toggle sidebar"),
             (f"prefix {focus_key}", "Focus sidebar / main pane"),
-            ("?", "Show help"),
+            ("?", "Toggle help"),
             ("q / Esc", "Close sidebar"),
         ]),
         ("In help", [
-            ("q / Esc", "Return to tree"),
+            ("? / q / Esc", "Return to tree"),
             ("j / k, Up / Down", "Scroll help"),
             ("PgUp / PgDn", "Scroll by page"),
             ("Home / End", "First / last help page"),

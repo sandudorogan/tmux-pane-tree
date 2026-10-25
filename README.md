@@ -103,10 +103,10 @@ Inside the sidebar:
 | `f`                  | Toggle pane filter                |
 | `p`                  | Toggle hide-panes mode            |
 | `Ctrl+l`             | Return focus to the main pane     |
-| `?`                  | Show all keymaps                  |
+| `?`                  | Toggle keymap help                |
 | `q`                  | Close the sidebar                 |
 
-In help, `q` or `Esc` returns to the tree. Use `j` / `k`, arrows, or the
+In help, `?`, `q`, or `Esc` returns to the tree. Use `j` / `k`, arrows, or the
 mouse wheel to scroll; `PgUp` / `PgDn` scrolls a page and `Home` / `End`
 jumps to the first / last page. Help shows your configured shortcuts.
 
