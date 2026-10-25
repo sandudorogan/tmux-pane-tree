@@ -103,7 +103,12 @@ Inside the sidebar:
 | `f`                  | Toggle pane filter                |
 | `p`                  | Toggle hide-panes mode            |
 | `Ctrl+l`             | Return focus to the main pane     |
+| `?`                  | Show all keymaps                  |
 | `q`                  | Close the sidebar                 |
+
+In help, `q` or `Esc` returns to the tree. Use `j` / `k`, arrows, or the
+mouse wheel to scroll; `PgUp` / `PgDn` scrolls a page and `Home` / `End`
+jumps to the first / last page. Help shows your configured shortcuts.
 
 New windows and sessions insert next to the selected row. Closing the last
 pane removes its window, and the last window removes its session.
@@ -151,7 +156,7 @@ set -g @tmux_pane_tree_filter "claude,codex,cursor,opencode"
 (`gg`), `go_bottom` (`G`), `jump_back` (`C-o`), `jump_forward` (`C-i`),
 `rename_window` (`rw`), `rename_session` (`rs`), `toggle_filter` (`f`),
 `close_pane` (`x`). If any shortcut is empty, duplicated, a prefix of another,
-or uses the reserved `q`, all ten revert to defaults.
+or uses the reserved `q` or `?`, all ten revert to defaults.
 
 ```tmux
 set -g @tmux_pane_tree_close_pane_shortcut dd

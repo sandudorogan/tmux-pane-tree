@@ -42,7 +42,9 @@ from sidebar_ui_lib.core import (
     tmux_option_value,
     toggle_hide_panes,
 )
-from sidebar_ui_lib.render import _run_context_menu, _write_row_map, init_sidebar_colors, render_screen
+from sidebar_ui_lib.render import (
+    _run_context_menu, _write_row_map, help_lines, init_sidebar_colors, render_help, render_screen,
+)
 from sidebar_ui_lib.tree import (
     dump_render,
     ensure_visible,
@@ -310,6 +312,10 @@ def run_interactive(stdscr) -> None:
     search_mode = False
     search_query = ""
     search_matches: set[int] = set()
+    help_mode = False
+    help_offset = 0
+    help_toggle_key = "t"
+    help_focus_key = "T"
     jump_list: list[JumpEntry] = []
     jump_index = -1
 
@@ -340,7 +346,7 @@ def run_interactive(stdscr) -> None:
                 jump_list, jump_index = seed_jump_list(
                     jump_list, jump_index, main_pane_id, selected_pane_id
                 )
-                for sidebar_action in sidebar_actions:
+                for sidebar_action in ([] if help_mode else sidebar_actions):
                     next_selected, jump_index, focus_main = resolve_jump_action(
                         sidebar_action, jump_list, jump_index
                     )
@@ -364,20 +370,27 @@ def run_interactive(stdscr) -> None:
             needs_render = True
 
         if needs_render:
-            render_screen(
-                stdscr,
-                rows,
-                selected_pane_id,
-                scroll_offset,
-                search_query,
-                search_matches,
-                search_mode,
-                active_attr,
-                session_attr,
-                window_attr,
-                pane_attr,
-            )
-            _write_row_map(rows, scroll_offset)
+            if help_mode:
+                lines = help_lines(shortcuts, curses.COLS - 1, help_toggle_key, help_focus_key)
+                help_max_offset = max(0, len(lines) - max(1, curses.LINES - 2))
+                help_offset = min(help_offset, help_max_offset)
+                render_help(stdscr, lines, help_offset)
+                _write_row_map([], 0)
+            else:
+                render_screen(
+                    stdscr,
+                    rows,
+                    selected_pane_id,
+                    scroll_offset,
+                    search_query,
+                    search_matches,
+                    search_mode,
+                    active_attr,
+                    session_attr,
+                    window_attr,
+                    pane_attr,
+                )
+                _write_row_map(rows, scroll_offset)
             needs_render = False
 
         key = stdscr.getch()
@@ -389,6 +402,33 @@ def run_interactive(stdscr) -> None:
             selected_index = find_selected_row_index(rows, selected_pane_id)
             visible_lines = curses.LINES - (1 if search_mode or search_query else 0)
             scroll_offset = ensure_visible(selected_index, scroll_offset, visible_lines, scrolloff)
+            needs_render = True
+            continue
+
+        if help_mode:
+            if key in (ord("q"), 27):
+                help_mode = False
+            elif key in (ord("j"), curses.KEY_DOWN):
+                help_offset += 1
+            elif key in (ord("k"), curses.KEY_UP):
+                help_offset = max(0, help_offset - 1)
+            elif key == curses.KEY_NPAGE:
+                help_offset += max(1, curses.LINES - 2)
+            elif key == curses.KEY_PPAGE:
+                help_offset = max(0, help_offset - max(1, curses.LINES - 2))
+            elif key == curses.KEY_HOME:
+                help_offset = 0
+            elif key == curses.KEY_END:
+                help_offset = help_max_offset
+            elif key == curses.KEY_MOUSE:
+                try:
+                    _, _, _, _, bstate = curses.getmouse()
+                except curses.error:
+                    continue
+                if bstate & curses.BUTTON4_PRESSED:
+                    help_offset = max(0, help_offset - MOUSE_SCROLL_LINES)
+                elif bstate & MOUSE_SCROLL_DOWN:
+                    help_offset += MOUSE_SCROLL_LINES
             needs_render = True
             continue
 
@@ -459,6 +499,15 @@ def run_interactive(stdscr) -> None:
                 user_scrolled = False
                 selected_index = find_selected_row_index(rows, selected_pane_id)
                 scroll_offset = ensure_visible(selected_index, scroll_offset, curses.LINES - 1, scrolloff)
+            needs_render = True
+            continue
+
+        if key == ord("?"):
+            help_mode = True
+            help_offset = 0
+            pending_key = ""
+            help_toggle_key = tmux_option_value("toggle_key") or "t"
+            help_focus_key = tmux_option_value("focus_key") or "T"
             needs_render = True
             continue
 

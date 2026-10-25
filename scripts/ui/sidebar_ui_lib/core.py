@@ -145,7 +145,7 @@ def configured_shortcuts() -> dict[str, str]:
             return dict(DEFAULT_SHORTCUTS)
         shortcuts[action] = shortcut
     shortcut_values = list(shortcuts.values())
-    if any("q" in shortcut for shortcut in shortcut_values):
+    if any("q" in shortcut or "?" in shortcut for shortcut in shortcut_values):
         return dict(DEFAULT_SHORTCUTS)
     if len(set(shortcut_values)) != len(shortcuts):
         return dict(DEFAULT_SHORTCUTS)
